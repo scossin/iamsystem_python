@@ -1,0 +1,55 @@
+[project]
+name = "iamsystem"
+version = "0.1.0"
+authors = [
+  { name="Sebastien Cossin", email="cossin.sebastien@gmail.com" },
+]
+description = "A python implementation of IAMsystem algorithm"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+keywords = ["NLP", "semantic annotation", "entity linking"]
+dependencies = ['unidecode>=1.1.1', 'typing-extensions~=4.4.0']
+
+[project.optional-dependencies]
+tests = ['spellwise>=0.8.0', 'nltk>=3.8.0', 'spacy>=3.2.0']
+doc = ["sphinx"]
+
+[project.urls]
+"Homepage" = "https://github.com/scossin/iamsystem_python"
+"Bug Tracker" = "https://github.com/scossin/iamsystem_python/issues"
+
+
+[tool.black]
+line-length = 79
+
+[tool.isort]
+atomic=true
+force_single_line=true
+lines_after_imports=2
+lines_between_types=1
+use_parentheses=true
+known_first_party="interrogate"
+known_third_party=["attr", "click", "py", "pytest", "setuptools", "tabulate"]
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = false
+ignore-semiprivate = false
+ignore-private = false
+ignore-module = true
+ignore-nested-functions = true
+ignore-property-decorators = false
+fail-under = 95
+exclude = ["docs/", "examples/"]
+verbose = 0
+omit-covered-files = false
+quiet = false
+whitelist-regex = []
+ignore-regex = ["[A-Za-z]+Test$"]
+color = true
