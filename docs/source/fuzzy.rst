@@ -11,12 +11,12 @@ character difference in a token can lead to a miss.
 
 In this package, a *fuzzy algorithm* is an algorithm that is a called for each token in a document
 and can return one or more *synonym*, i.e. another string with the same meaning.
-The combination of several fuzzy algorithm offers great flexibility in the matching strategy,
+The combination of several fuzzy algorithms offers great flexibility in the matching strategy,
 it increases recall but can also decrease precision.
 
 This package doesn't contain any implementation of approximate string matching algorithms,
 it relies on and wraps external libraries to do so.
-These external libraries are not in the requirement file of this package,
+Some external libraries are not in the requirement file of this package,
 so you will need to install them manually depending on the fuzzy algorithm you wish to add.
 
 Which fuzzy algorithm to choose
@@ -72,12 +72,12 @@ to the matcher.
 
 Note the following:
 
-* The first word "Pt" is associated with a single annotation.
+- The first word "Pt" is associated with a single annotation.
 
 Since "hospitalized" comes after the abbreviation and since the matcher removes nested keywords
 by default (See :ref:`annotation:Full overlapping`), the ambiguity is removed.
 
-* The last word "PT" has two annotations
+- The last word "PT" has two annotations
 
 The :ref:`api_doc:Abbreviations` is context independent and cannot resolve the ambiguity here.
 To solve this problem, the annotations could be post-processed to identify the correct long form.
@@ -133,7 +133,7 @@ checks if the document's token is an abbreviation or not:
         # PT	36 38	physiotherapy (D007297)	pt(upper case abbs)
 
 Notice that TokenT is a generic token type, so
-if you use a custom tokenizer (i.e. from an external library) you can access custom attributes.
+if you use a custom tokenizer (i.e. from an external library like spaCy) you can access custom attributes.
 
 
 String Distance
@@ -366,19 +366,19 @@ You might be interested in the fuzzy algorithms abstract base classes
 if you want to create a new custom fuzzy algorithm.
 The hierarchy is the following:
 
-* :ref:`api_doc:FuzzyAlgo`
+- :ref:`api_doc:FuzzyAlgo`
 
 Implements this class to create a context dependent algorithm.
 For each token for which a synonym is expected, the context words
 and the algorithm's states are available.
 
-* :ref:`api_doc:ContextFreeAlgo`
+- :ref:`api_doc:ContextFreeAlgo`
 
 Implements this class to create a context-free algorithm that depends only on the
 current token. The class has access to the generic token for which a synonym is expected.
 Examples of such algorithms: :ref:`fuzzy:FuzzyRegex`, :ref:`fuzzy:Abbreviations`.
 
-* :ref:`api_doc:NormLabelAlgo`
+- :ref:`api_doc:NormLabelAlgo`
 
 Implements this class to create a context-free algorithm that depends only on the normalized
 form of the token. The class has access to the normalized label of the token for which a synonym is expected.

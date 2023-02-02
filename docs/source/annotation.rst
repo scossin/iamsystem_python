@@ -11,10 +11,10 @@ Annotation's format
 
 The *to_string* method returns a string representation containing three tabulated fields:
 
-* A concatenation of tokens label as they appear in the document.
-* The start-end offsets in the Brat format (start and end are separated by a space,
+- A concatenation of tokens label as they appear in the document.
+- The start-end offsets in the Brat format (start and end are separated by a space,
   a semicolon is used to separate offsets of discontinuous tokens).
-* A string representation of detected Keywords.
+- A string representation of detected Keywords.
 
 For example:
 
@@ -100,7 +100,7 @@ For example:
 
 .. code-block:: python
     :linenos:
-    :emphasize-lines: 5, 11
+    :emphasize-lines: 5, 10
 
         from iamsystem import Matcher
         matcher = Matcher()

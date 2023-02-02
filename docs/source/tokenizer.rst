@@ -4,8 +4,8 @@ The iamsystem matcher is highly dependent on how documents and keywords are toke
 The :ref:`api_doc:ITokenizer` is responsible for turning text into tokens.
 To do so, the :ref:`api_doc:TokenizerImp` class performs tokenization with two inner functions:
 
-* split the text into (start,end) offsets
-* normalize each token
+- split the text into (start,end) offsets
+- normalize each token
 
 .. _adapter: https://en.wikipedia.org/wiki/Adapter_pattern
 
@@ -76,8 +76,6 @@ To change Matcher's default tokenizer, pass it to the constructor.
 
         # sars cov +	51 60	SARS-CoV+ (95209-3)
 
-Note that you need to override the default tokenizer **before** adding keywords, otherwise
-the keywords would not be tokenized like your document.
 
 Default normalize function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

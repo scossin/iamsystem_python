@@ -13,10 +13,10 @@ Brat Document
 The class :ref:`api_doc:BratDocument` can store **Brat entities** and **Brat notes**.
 Each entity corresponds to an annotation:
 
-* An ID
-* A Brat type that should be declared in Brat's configuration file (annotation.conf)
-* start-end offsets
-* text substring
+- An ID
+- A Brat type that should be declared in Brat's configuration file (annotation.conf)
+- start-end offsets
+- text substring
 
 .. code-block:: python
     :linenos:

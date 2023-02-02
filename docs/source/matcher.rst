@@ -26,9 +26,9 @@ With a list of words (keywords)
         # Acute Respiratory Distress Syndrome	7 42	acute respiratory distress syndrome
         # diarrrhea	47 56	diarrrhea
 
-Have a look at :ref:`annotation:Annotation's format`.
-To add attributes to words, create a :ref:`api_doc:Keyword` subclass.
-The :ref:`api_doc:Term` class shown below associates a unique identifier with each word.
+The matcher outputs a list of :ref:`annotation:Annotation`.
+To add attributes, create a :ref:`api_doc:Keyword` subclass.
+The :ref:`api_doc:Term` class shown below associates a unique identifier to each label.
 
 With a list of terms
 ^^^^^^^^^^^^^^^^^^^^
