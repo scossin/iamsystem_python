@@ -1,10 +1,10 @@
 # iamsystem
-[![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg) [![macOS](https://svgshare.com/i/ZjP.svg)](https://svgshare.com/i/ZjP.svg)
-[![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg) [![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
-
-[![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.python.org/pypi/iamsystem/)
-
-![test](https://github.com/scossin/iamsystem_python/actions/workflows/test.yml/badge.svg)
+![test](https://github.com/scossin/iamsystem_python/actions/workflows/tests.yml/badge.svg)
+[![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
+[![PyPI version fury.io](https://badge.fury.io/py/iamsystem.svg)](https://pypi.org/project/iamsystem/)
+[![PyPI license](https://img.shields.io/pypi/l/iamsystem.svg)](https://pypi.python.org/pypi/iamsystem/)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/iamsystem.svg)](https://pypi.python.org/pypi/iamsystem/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
 A python implementation of IAMsystem algorithm, a fast dictionary-based approach for semantic annotation, a.k.a entity linking.
 
@@ -19,6 +19,8 @@ pip install iamsystem
 You provide a list of keywords you want to detect in a document,
 you can add and combine abbreviations, normalization methods (lemmatization, stemming) and approximate string matching algorithms,
 IAMsystem algorithm performs the semantic annotation.
+
+See the [documentation](https://iamsystem-python.readthedocs.io/en/latest/) for the configuration details.
 
 ### Quick example
 
@@ -77,5 +79,5 @@ has participated in several semantic annotation competitions in the medical doma
 
 ## Changelog
 
-**0.1.0**
+**0.1.1**
 * Initial release
