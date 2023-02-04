@@ -238,7 +238,21 @@ ESpellWiseAlgo
    :undoc-members:
    :show-inheritance:
 
+SimString
+^^^^^^^^^
+SimStringWrapper
+""""""""""""""""
+.. autoclass:: iamsystem.fuzzy.simstring.SimStringWrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
+ESimStringMeasure
+"""""""""""""""""
+.. autoclass:: iamsystem.fuzzy.simstring.ESimStringMeasure
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Brat
 ----

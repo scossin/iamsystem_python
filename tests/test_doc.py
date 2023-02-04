@@ -575,6 +575,28 @@ class FuzzyDocTest(unittest.TestCase):
         # acute resiratory distresssss	0 28	acute respiratory distress (J80) acute(exact,LEVENSHTEIN,SOUNDEX);resiratory(LEVENSHTEIN);distresssss(SOUNDEX) # noqa
         self.assertEqual(1, len(annots))
 
+    def test_simstring(self):
+        """Simstring example."""
+        from iamsystem import Matcher
+        from iamsystem import Term
+        from iamsystem.fuzzy.simstring import ESimStringMeasure
+        from iamsystem.fuzzy.simstring import SimStringWrapper
+
+        term1 = Term(label="acute respiratory distress", code="J80")
+        matcher = Matcher()
+        matcher.add_keywords(keywords=[term1])
+        fuzzy_ss = SimStringWrapper(
+            words=matcher.get_keywords_unigrams(),
+            measure=ESimStringMeasure.COSINE,
+            threshold=0.7,
+        )
+        matcher.add_fuzzy_algo(fuzzy_algo=fuzzy_ss)
+        annots = matcher.annot_text(text="acute respiratori disstress")
+        for annot in annots:
+            print(annot)
+        # acute respiratori disstress	0 27	acute respiratory distress (J80)
+        self.assertEqual(1, len(annots))
+
     def test_cache_fuzzy_algos(self):
         """Cache example."""
         from iamsystem import Abbreviations

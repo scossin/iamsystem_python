@@ -139,9 +139,15 @@ if you use a custom tokenizer (i.e. from an external library like spaCy) you can
 String Distance
 ^^^^^^^^^^^^^^^
 .. _spellwise: https://github.com/chinnichaitanya/spellwise
+.. _pysimstring: https://github.com/percevalw/pysimstring
 
-This package utilizes the `spellwise`_ python library to access string distance algorithms.
-In the example below, iamsystem is configured with two spelling algorithms:
+
+This package utilizes the `spellwise`_ and `pysimstring`_ libraries to access string distance algorithms.
+
+Spellwise
+"""""""""
+
+In the example below, iamsystem is configured with two spellwise algorithms:
 Levenshtein distance which measures the number of edits needed to transform one word into another,
 and Soundex which is a phonetic algorithm.
 
@@ -180,6 +186,40 @@ See also :ref:`api_doc:SpellWiseWrapper` for configuration.
 When the number of keywords is large, these algorithms can be slow.
 Since their output doesn't depend on the context,
 I recommend using the :ref:`fuzzy:CacheFuzzyAlgos` class to store them.
+
+SimString
+"""""""""
+.. _simstring: http://chokkan.org/software/simstring/
+
+The `pysimstring`_ library provides an API to the fast `simstring`_ algorithm implemented in C++.
+
+In the example below, all the unigrams of the keywords are indexed by simstring.
+Then, for each token in the document, simstring is called to return the closest matches.
+
+.. code-block:: python
+
+        from iamsystem.fuzzy.simstring import (
+            SimStringWrapper,
+            ESimStringMeasure,
+        )
+        from iamsystem import Term, Matcher
+
+        term1 = Term(label="acute respiratory distress", code="J80")
+        matcher = Matcher()
+        matcher.add_keywords(keywords=[term1])
+        fuzzy_ss = SimStringWrapper(
+            words=matcher.get_keywords_unigrams(),
+            measure=ESimStringMeasure.COSINE,
+            threshold=0.7,
+        )
+        matcher.add_fuzzy_algo(fuzzy_algo=fuzzy_ss)
+        annots = matcher.annot_text(text="acute respiratori disstress")
+        for annot in annots:
+            print(annot)
+        # acute respiratori disstress	0 27	acute respiratory distress (J80)
+
+Using the cosine similarity and a threshold of 0.7,
+the tokens *respiratori* matched to *respiratory* and *disstress* matched to *distress*.
 
 CacheFuzzyAlgos
 ^^^^^^^^^^^^^^^

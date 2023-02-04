@@ -20,7 +20,7 @@ keywords = ["NLP", "semantic annotation", "entity linking"]
 dependencies = ['unidecode>=1.1.1', 'typing-extensions~=4.4.0', 'spellwise>=0.8.0']
 
 [project.optional-dependencies]
-tests = ['spellwise>=0.8.0', 'nltk>=3.8.0', 'spacy>=3.2.0']
+tests = ['spellwise>=0.8.0', 'nltk>=3.8.0', 'spacy>=3.2.0', 'pysimstring==1.2.1']
 doc = ["sphinx"]
 
 [project.urls]
