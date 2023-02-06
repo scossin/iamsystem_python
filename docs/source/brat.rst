@@ -14,29 +14,19 @@ The class :ref:`api_doc:BratDocument` can store **Brat entities** and **Brat not
 Each entity corresponds to an annotation:
 
 - An ID
-- A Brat type that should be declared in Brat's configuration file (annotation.conf)
+- A Brat type declared in Brat's configuration file (annotation.conf)
 - start-end offsets
 - text substring
 
-.. code-block:: python
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 8
+    :emphasize-lines: 12
+    :start-after: # start_test_brat_document
+    :end-before: # end_test_brat_document
 
-        from iamsystem import Matcher, Term, BratDocument
-        matcher = Matcher()
-        term1 = Term(label="North America", code="NA")
-        matcher.add_keywords(keywords=[term1])
-        text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
-        brat_document = BratDocument()
-        brat_document.add_annots(annots, text=text, brat_type="CONTINENT", keyword_attr=None)
-        print(str(brat_document))
-
-
-.. code-block:: pycon
-
-        # T1	CONTINENT 0 5;16 23	North America
-        # #1	IAMSYSTEM T1	North America (NA)
 
 The first line is the brat entity, the second is the brat note. T1 is the ID of the brat entity.
 Each note is linked to a brat entity by its ID, here T1.
@@ -50,49 +40,22 @@ applies to all annotations.
 If you have multiple Brat types, a better way to do this is to store the Brat type
 in a :ref:`api_doc:Keyword` subclass attribute and to pass the attribute name to the *add_annots* function:
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 14
-
-        from iamsystem import Term
-        class Entity(Term):
-            def __init__(self, label: str, code: str, brat_type: str):
-                super().__init__(label, code)
-                self.brat_type = brat_type
-
-        from iamsystem import Matcher, BratDocument
-        matcher = Matcher()
-        term1 = Entity(label="North America", code="NA", brat_type="CONTINENT")
-        matcher.add_keywords(keywords=[term1])
-        text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
-        brat_document = BratDocument()
-        brat_document.add_annots(annots=annots, text=text, keyword_attr='brat_type')
-        print(str(brat_document))
-
-.. code-block:: pycon
-
-        # T1	CONTINENT 0 5;16 23	North America
-        # #1	IAMSYSTEM T1	North America (NA)
+    :emphasize-lines: 18
+    :start-after: # start_test_brat_doc_keyword
+    :end-before: # end_test_brat_doc_keyword
 
 Brat Writer
-^^^^^^^^^^^^^
+^^^^^^^^^^^
 
 This package provides an utility class to write a :ref:`api_doc:BratDocument`.
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 11,12
-
-        from iamsystem import Matcher, Term, BratDocument, BratWriter
-        matcher = Matcher()
-        term1 = Term(label="North America", code="NA")
-        matcher.add_keywords(keywords=[term1])
-        text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
-        brat_document = BratDocument()
-        brat_document.add_annots(annots, text=text, brat_type="CONTINENT")
-        filename = "./doc.ann"
-        with(open(filename, 'w')) as f:
-            BratWriter.saveEntities(brat_entities=brat_document.get_entities(), write=f.write)
-            BratWriter.saveNotes(brat_notes=brat_document.get_notes(), write=f.write)
+    :start-after: # start_test_brat_writer
+    :end-before: # end_test_brat_writer

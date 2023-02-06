@@ -20,8 +20,8 @@ from iamsystem.tokenization.util import replace_offsets_by_new_str
 
 
 class Annotation(Span[TokenT]):
-    """Ouput class of :class:`~iamsystem.Matcher` storing information about
-    linked entities."""
+    """Ouput class of :class:`~iamsystem.Matcher` storing information on the
+    detected entities."""
 
     def __init__(self, tokens_states: Sequence[TransitionState[TokenT]]):
         tokens: List[TokenT] = [tok_state.token for tok_state in tokens_states]

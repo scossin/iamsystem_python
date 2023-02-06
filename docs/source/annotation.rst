@@ -18,30 +18,13 @@ The *to_string* method returns a string representation containing three tabulate
 
 For example:
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 11,12,13
-
-        from iamsystem import Matcher, Abbreviations, Term
-        matcher = Matcher()
-        abb = Abbreviations(name="abbs")
-        abb.add(short_form="infect", long_form="infectious", tokenizer=matcher)
-        matcher.add_fuzzy_algo(abb)
-        term = Term(label="infectious disease", code="D007239")
-        matcher.add_keywords(keywords=[term])
-        text = "Infect mononucleosis disease"
-        annots = matcher.annot_text(text=text, w=2)
-        for annot in annots:
-            print(annot)
-            print(annot.to_string(text=text))
-            print(annot.to_string(text=text, debug=True))
-
-
-.. code-block:: pycon
-
-        # Infect disease	0 6;21 28	infectious disease (D007239)
-        # Infect disease	0 6;21 28	infectious disease (D007239)	Infect mononucleosis disease
-        # Infect disease	0 6;21 28	infectious disease (D007239)	Infect mononucleosis disease	infect(abbs);disease(exact)
+    :emphasize-lines: 18,19,20
+    :start-after: # start_test_annotation_format
+    :end-before: # end_test_annotation_format
 
 Passing the document to the *to_string* function adds the document substring
 that begins at the first token start offset and ends at the last token end offset.
@@ -58,27 +41,12 @@ This happens if two terms have the same label but
 also if the normalization process removes punctuation or if stopwords are ignored.
 In the example below, only one annotation is produced and it has 3 keywords:
 
-.. code-block:: python
-
-        from iamsystem import Matcher, english_tokenizer, Term
-        term1 = Term(label="Infectious Disease", code="J80")
-        term2 = Term(label="infectious disease", code="C0042029")
-        term3 = Term(label="infectious disease, unspecified", code="C0042029")
-        tokenizer = english_tokenizer()
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_stopwords(words=["unspecified"])
-        matcher.add_keywords(keywords=[term1, term2, term3])
-        text = "History of infectious disease"
-        annots = matcher.annot_text(text=text)
-        annot = annots[0]
-        for keyword in annot.keywords:
-            print(keyword)
-
-.. code-block:: pycon
-
-        # Infectious Disease (J80)
-        # infectious disease (C0042029)
-        # infectious disease, unspecified (C0042029)
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_annotation_multiple_keywords
+    :end-before: # end_test_annotation_multiple_keywords
 
 Overlapping and ancestors
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -98,43 +66,24 @@ Furthermore, if a1 has all the tokens of a2 then a2 is called a **nested annotat
 By default, the :ref:`matcher:Matcher` removes nested annotation.
 For example:
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 5, 10
+    :emphasize-lines: 6,11
+    :start-after: # start_test_annotation_overlapping_ancestors
+    :end-before: # end_test_annotation_overlapping_ancestors
 
-        from iamsystem import Matcher
-        matcher = Matcher()
-        matcher.add_labels(labels=["lung", "lung cancer"])
-        text = "Presence of a lung cancer"
-        annots = matcher.annot_text(text=text, w=1)
-        for annot in annots:
-            print(annot)
-        # lung cancer	14 25	lung cancer
-        self.assertEqual("lung cancer	14 25	lung cancer", str(annots[0]))
-        matcher.remove_nested_annots = False
-        annots = matcher.annot_text(text=text, w=1)
-        for annot in annots:
-            print(annot)
-        # lung	14 18	lung
-        # lung cancer	14 25	lung cancer
 
 Another example where the first annotation fully overlaps the second but the latter is not
 a nested annotation:
 
-.. code-block:: python
-
-        from iamsystem import Matcher
-        matcher = Matcher()
-        matcher.add_labels(labels=["North America", "South America"])
-        text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
-        for annot in annots:
-            print(annot)
-
-.. code-block:: pycon
-
-        # North America	0 5;16 23	North America
-        # South America	10 23	South America
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_annotation_overlapping_not_ancestors
+    :end-before: # end_test_annotation_overlapping_not_ancestors
 
 The first annotation, starting at offset 0 and ending at offset 23, fully overlaps the second.
 However, it doesn't have all the tokens of the second annotation,
@@ -155,19 +104,13 @@ Partial overlapping
 Definition: let a1 and a2 two annotations. If a1.start < a2.start and a2.start < a1.end
 then we say that a1 **partially overlaps** a2.
 
-.. code-block:: python
 
-        from iamsystem import Matcher
-        matcher = Matcher()
-        matcher.add_labels(labels=["lung cancer", "cancer prognosis"])
-        annots = matcher.annot_text(text="lung cancer prognosis")
-        for annot in annots:
-            print(annot)
-
-.. code-block:: pycon
-
-        # lung cancer	0 11	lung cancer
-        # cancer prognosis	5 21	cancer prognosis
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_annotation_partial_overlap
+    :end-before: # end_test_annotation_partial_overlap
 
 The first annotation partially overlaps the second because it ends after the second starts.
 In this example, both annotations share the *"cancer"* token.

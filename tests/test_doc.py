@@ -44,6 +44,7 @@ class MatcherDocTest(unittest.TestCase):
 
     def test_exact_match_keywords(self):
         """Matcher with a list of words."""
+        # start_test_exact_match_keywords
         from iamsystem import Matcher
 
         labels = ["acute respiratory distress syndrome", "diarrrhea"]
@@ -55,6 +56,7 @@ class MatcherDocTest(unittest.TestCase):
             print(annot)
         # Acute Respiratory Distress Syndrome	7 42	acute respiratory distress syndrome # noqa
         # diarrrhea	47 56	diarrrhea
+        # end_test_exact_match_keywords
         self.assertEqual(
             "Acute Respiratory Distress Syndrome	7 42	acute respiratory "
             "distress syndrome",
@@ -65,6 +67,7 @@ class MatcherDocTest(unittest.TestCase):
 
     def test_exact_match_terms(self):
         """Matcher with Term class."""
+        # start_test_exact_match_terms
         from iamsystem import Matcher
         from iamsystem import Term
 
@@ -78,6 +81,7 @@ class MatcherDocTest(unittest.TestCase):
             print(annot)
         # acute respiratory distress syndrome	7 42	acute respiratory distress syndrome (J80) # noqa
         # diarrrhea (R19.7)	47	56
+        # end_test_exact_match_terms
         self.assertEqual(
             "acute respiratory distress syndrome	7 42	acute respiratory "
             "distress syndrome (J80)",
@@ -87,6 +91,7 @@ class MatcherDocTest(unittest.TestCase):
 
     def test_window(self):
         """Matcher with a window different than 1."""
+        # start_test_window
         from iamsystem import Matcher
 
         labels = ["calcium level"]
@@ -96,6 +101,7 @@ class MatcherDocTest(unittest.TestCase):
         for annot in annots:
             print(annot)
         # calcium level	0 7;14 19	calcium level
+        # end_test_window
         self.assertEqual(
             "calcium level	0 7;14 19	calcium level", str(annots[0])
         )
@@ -103,6 +109,7 @@ class MatcherDocTest(unittest.TestCase):
     def test_fail_order(self):
         """Matcher fails to detect when tokens order is not the same in
         keywords and document."""
+        # start_test_fail_order
         from iamsystem import Matcher
 
         labels = ["calcium level"]
@@ -111,12 +118,14 @@ class MatcherDocTest(unittest.TestCase):
         annots = matcher.annot_text(text="level calcium", w=2)
         print(len(annots))
         # 0
+        # end_test_fail_order
         self.assertEqual(0, len(annots))
 
 
 class TokenizerDocTest(unittest.TestCase):
     def test_tokenizer(self):
         """Alphanumeric tokenizer limits : '+' sign is not a token."""
+        # start_test_tokenizer
         from iamsystem import english_tokenizer
 
         tokenizer = english_tokenizer()
@@ -125,6 +134,7 @@ class TokenizerDocTest(unittest.TestCase):
             print(token)
         # Token(label='SARS', norm_label='sars', start=0, end=4)
         # Token(label='CoV', norm_label='cov', start=5, end=8)
+        # end_test_tokenizer
         self.assertEqual(
             "Token(label='SARS', norm_label='sars', start=0, end=4)",
             str(tokens[0]),
@@ -132,6 +142,7 @@ class TokenizerDocTest(unittest.TestCase):
 
     def test_custom_tokenizer(self):
         """Change tokenizer's split function."""
+        # start_test_custom_tokenizer
         from iamsystem import english_tokenizer
         from iamsystem import split_find_iter_closure
 
@@ -143,12 +154,14 @@ class TokenizerDocTest(unittest.TestCase):
         # Token(label='SARS', norm_label='sars', start=0, end=4)
         # Token(label='CoV', norm_label='cov', start=5, end=8)
         # Token(label='+', norm_label='+', start=8, end=9)
+        # end_test_custom_tokenizer
         self.assertEqual(
             "Token(label='+', norm_label='+', start=8, end=9)", str(tokens[2])
         )
 
     def test_matcher_with_custom_tokenizer(self):
         """Matcher with a custom tokenizer."""
+        # start_test_matcher_with_custom_tokenizer
         from iamsystem import Matcher
         from iamsystem import Term
         from iamsystem import english_tokenizer
@@ -164,6 +177,7 @@ class TokenizerDocTest(unittest.TestCase):
         for annot in annots:
             print(annot)
         # sars cov +	51 60	SARS-CoV+ (95209-3)
+        # end_test_matcher_with_custom_tokenizer
         self.assertEqual(
             "sars cov +	51 60	SARS-CoV+ (95209-3)", str(annots[0])
         )
@@ -171,6 +185,7 @@ class TokenizerDocTest(unittest.TestCase):
     def test_unordered_words_seq(self):
         """Tokenizer orders the tokens to have a match when the order of
         tokens is not the same in document and keywords."""
+        # start_test_unordered_words_seq
         from iamsystem import Matcher
         from iamsystem import english_tokenizer
         from iamsystem import tokenize_and_order_decorator
@@ -185,12 +200,14 @@ class TokenizerDocTest(unittest.TestCase):
         for annot in annots:
             print(annot)
         # level calcium blood	4 9;13 20;41 46	blood calcium level
+        # end_test_unordered_words_seq
         self.assertEqual(1, len(annots))
 
 
 class StopwordsTest(unittest.TestCase):
     def test_add_stopword(self):
         """Adding stopwords to have a match."""
+        # start_test_add_stopword
         from iamsystem import Matcher
         from iamsystem import Term
         from iamsystem import english_tokenizer
@@ -205,6 +222,7 @@ class StopwordsTest(unittest.TestCase):
         for annot in annots:
             print(annot)
         # essential hypertension	17 39	Essential hypertension, unspecified (I10.9) # noqa
+        # end_test_add_stopword
         self.assertEqual(
             "essential hypertension	17 39	Essential hypertension, "
             "unspecified (I10.9)",
@@ -213,6 +231,7 @@ class StopwordsTest(unittest.TestCase):
 
     def test_negative_stopword(self):
         """Matcher with negatives stopwords."""
+        # start_test_negative_stopword
         from iamsystem import Keyword
         from iamsystem import Matcher
         from iamsystem import NegativeStopwords
@@ -223,25 +242,27 @@ class StopwordsTest(unittest.TestCase):
         text = "the level of calcium can be measured in the blood."
         termino = Terminology()
         termino.add_keywords(keywords=[Keyword(label="calcium blood")])
-        stopwords = NegativeStopwords()
+        neg_stopwords = NegativeStopwords()
         tokenizer = english_tokenizer()
-        stopwords.add_words(
+        neg_stopwords.add_words(
             words_to_keep=termino.get_unigrams(
                 tokenizer=tokenizer, stopwords=NoStopwords()
             )
         )
-        matcher = Matcher(tokenizer=tokenizer, stopwords=stopwords)
+        matcher = Matcher(tokenizer=tokenizer, stopwords=neg_stopwords)
         matcher.add_keywords(keywords=termino)
         annots = matcher.annot_text(text=text, w=1)
         for annot in annots:
             print(annot)
         # calcium blood	13 20;44 49	calcium blood
+        # end_test_negative_stopword
         self.assertEqual(1, len(annots))
 
 
 class AnnotationDocTest(unittest.TestCase):
     def test_annotation_format(self):
         """String representation of annotation."""
+        # start_test_annotation_format
         from iamsystem import Abbreviations
         from iamsystem import Matcher
         from iamsystem import Term
@@ -265,6 +286,7 @@ class AnnotationDocTest(unittest.TestCase):
         # Infect disease	0 6;21 28	infectious disease (D007239) # noqa
         # Infect disease	0 6;21 28	infectious disease (D007239)	Infect mononucleosis disease # noqa
         # Infect disease	0 6;21 28	infectious disease (D007239)	Infect mononucleosis disease	infect(abbs);disease(exact) # noqa
+        # end_test_annotation_format
         self.assertEqual(
             "Infect disease	0 6;21 28	infectious disease (D007239)",
             str(annots[0]),
@@ -282,6 +304,7 @@ class AnnotationDocTest(unittest.TestCase):
 
     def test_annotation_multiple_keywords(self):
         """One annotation can have multiple keywords."""
+        # start_test_annotation_multiple_keywords
         from iamsystem import Matcher
         from iamsystem import Term
         from iamsystem import english_tokenizer
@@ -301,6 +324,7 @@ class AnnotationDocTest(unittest.TestCase):
         # Infectious Disease (J80)
         # infectious disease (C0042029)
         # infectious disease, unspecified (C0042029)
+        # end_test_annotation_multiple_keywords
         keyword_str = [str(keyword) for keyword in annot.keywords]
         self.assertTrue("Infectious Disease (J80)" in keyword_str)
         self.assertTrue("infectious disease (C0042029)" in keyword_str)
@@ -310,6 +334,7 @@ class AnnotationDocTest(unittest.TestCase):
 
     def test_annotation_overlapping_ancestors(self):
         """Remove or keep ancestors."""
+        # start_test_annotation_overlapping_ancestors
         from iamsystem import Matcher
 
         matcher = Matcher()
@@ -326,10 +351,12 @@ class AnnotationDocTest(unittest.TestCase):
             print(annot)
         # lung	14 18	lung
         # lung cancer	14 25	lung cancer
+        # end_test_annotation_overlapping_ancestors
         self.assertEqual("lung	14 18	lung", str(annots[0]))
 
     def test_annotation_overlapping_not_ancestors(self):
         """Case of overlapping but not an ancestor."""
+        # start_test_annotation_overlapping_not_ancestors
         from iamsystem import Matcher
 
         matcher = Matcher()
@@ -340,6 +367,7 @@ class AnnotationDocTest(unittest.TestCase):
             print(annot)
         # North America	0 5;16 23	North America
         # South America	10 23	South America
+        # end_test_annotation_overlapping_not_ancestors
         self.assertEqual(
             "North America	0 5;16 23	North America", str(annots[0])
         )
@@ -348,6 +376,7 @@ class AnnotationDocTest(unittest.TestCase):
     def test_annotation_partial_overlap(self):
         """Case of partial annotation overlapping that have a word
         in common."""
+        # start_test_annotation_partial_overlap
         from iamsystem import Matcher
 
         matcher = Matcher()
@@ -357,6 +386,7 @@ class AnnotationDocTest(unittest.TestCase):
             print(annot)
         # lung cancer	0 11	lung cancer
         # cancer prognosis	5 21	cancer prognosis
+        # end_test_annotation_partial_overlap
         self.assertEqual("lung cancer	0 11	lung cancer", str(annots[0]))
         self.assertEqual(
             "cancer prognosis	5 21	cancer prognosis", str(annots[1])
@@ -381,6 +411,7 @@ class AnnotationDocTest(unittest.TestCase):
 class BratDocTest(unittest.TestCase):
     def test_brat_document(self):
         """Brat document example."""
+        # start_test_brat_document
         from iamsystem import BratDocument
         from iamsystem import Matcher
         from iamsystem import Term
@@ -397,6 +428,7 @@ class BratDocTest(unittest.TestCase):
         print(str(brat_document))
         # T1	CONTINENT 0 5;16 23	North America
         # #1	IAMSYSTEM T1	North America (NA)
+        # end_test_brat_document
         self.assertEqual(
             "T1\tCONTINENT 0 5;16 23\tNorth America\n#1\tIAMSYSTEM T1\tNorth "
             "America (NA)",
@@ -406,6 +438,7 @@ class BratDocTest(unittest.TestCase):
     def test_brat_doc_keyword(self):
         """Brat document example with a custom Keyword that stores
         brat_type."""
+        # start_test_brat_doc_keyword
         from iamsystem import Term
 
         class Entity(Term):
@@ -428,6 +461,7 @@ class BratDocTest(unittest.TestCase):
         print(str(brat_document))
         # T1	CONTINENT 0 5;16 23	North America
         # #1	IAMSYSTEM T1	North America (NA)
+        # end_test_brat_doc_keyword
         self.assertEqual(
             "T1\tCONTINENT 0 5;16 23\tNorth America\n#1\tIAMSYSTEM T1\tNorth "
             "America (NA)",
@@ -436,6 +470,10 @@ class BratDocTest(unittest.TestCase):
 
     def test_brat_writer(self):
         """BratWriter example."""
+        # start_test_brat_writer
+        import os
+        import tempfile
+
         from iamsystem import BratDocument
         from iamsystem import BratWriter
         from iamsystem import Matcher
@@ -446,25 +484,29 @@ class BratDocTest(unittest.TestCase):
         matcher.add_keywords(keywords=[term1])
         text = "North and South America"
         annots = matcher.annot_text(text=text, w=3)
-        brat_document = BratDocument()
-        brat_document.add_annots(annots, text=text, brat_type="CONTINENT")
-        # filename = "./doc.ann"
-        # with(open(filename, 'w')) as f:
-        #     BratWriter.saveEntities(brat_entities=
-        #     brat_document.get_entities(), write=f.write)
-        #     BratWriter.saveNotes(brat_notes=
-        #     brat_document.get_notes(), write=f.write)
-        BratWriter.saveEntities(
-            brat_entities=brat_document.get_entities(), write=lambda x: None
-        )
-        BratWriter.saveNotes(
-            brat_notes=brat_document.get_notes(), write=lambda x: None
-        )
+        doc = BratDocument()
+        doc.add_annots(annots, text=text, brat_type="CONTINENT")
+        temp_path = tempfile.mkdtemp()
+        os.makedirs(temp_path, exist_ok=True)
+        filename = os.path.join(temp_path, "docs.ann")
+        with (open(filename, "w")) as f:
+            BratWriter.saveEntities(
+                brat_entities=doc.get_entities(), write=f.write
+            )
+            BratWriter.saveNotes(brat_notes=doc.get_notes(), write=f.write)
+        # end_test_brat_writer
+        with (open(filename, "r")) as f:
+            lines = f.readlines()
+            self.assertEqual(
+                lines[0], "T1	CONTINENT 0 5;16 23	North America\n"
+            )
+            self.assertEqual(lines[1], "#1	IAMSYSTEM T1	North America (NA)\n")
 
 
 class FuzzyDocTest(unittest.TestCase):
     def test_abbreviations(self):
         """Abbreviations without customization."""
+        # start_test_abbreviations
         from iamsystem import Abbreviations
         from iamsystem import Matcher
         from iamsystem import Term
@@ -497,10 +539,12 @@ class FuzzyDocTest(unittest.TestCase):
         # ARD	21 24	acute respiratory distress (J80)	ard(abbs)
         # PT	36 38	patient (D007290)	pt(abbs)
         # PT	36 38	physiotherapy (D007297)	pt(abbs)
+        # end_test_abbreviations
         self.assertEqual(4, len(annots))
 
     def test_uppercase(self):
         """Abbreviations that check uppercase."""
+        # start_test_uppercase
         from iamsystem import Abbreviations
         from iamsystem import Matcher
         from iamsystem import Term
@@ -550,10 +594,12 @@ class FuzzyDocTest(unittest.TestCase):
         # Pt hospitalized	0 15	patient hospitalized (D007297)	pt(capitalized abbs);hospitalized(exact) # noqa
         # ARD	21 24	acute respiratory distress (J80)	ard(upper case abbs)
         # PT	36 38	physiotherapy (D007297)	pt(upper case abbs)
+        # end_test_uppercase
         self.assertEqual(3, len(annots))
 
     def test_spellwise(self):
         """Spellwise library examples."""
+        # start_test_spellwise
         from iamsystem import ESpellWiseAlgo
         from iamsystem import Matcher
         from iamsystem import SpellWiseWrapper
@@ -573,10 +619,12 @@ class FuzzyDocTest(unittest.TestCase):
         for annot in annots:
             print(annot.to_string(debug=True))
         # acute resiratory distresssss	0 28	acute respiratory distress (J80) acute(exact,LEVENSHTEIN,SOUNDEX);resiratory(LEVENSHTEIN);distresssss(SOUNDEX) # noqa
+        # end_test_spellwise
         self.assertEqual(1, len(annots))
 
     def test_simstring(self):
         """Simstring example."""
+        # start_test_simstring
         from iamsystem import Matcher
         from iamsystem import Term
         from iamsystem.fuzzy.simstring import ESimStringMeasure
@@ -595,10 +643,12 @@ class FuzzyDocTest(unittest.TestCase):
         for annot in annots:
             print(annot)
         # acute respiratori disstress	0 27	acute respiratory distress (J80)
+        # end_test_simstring
         self.assertEqual(1, len(annots))
 
     def test_cache_fuzzy_algos(self):
         """Cache example."""
+        # start_test_cache_fuzzy_algos
         from iamsystem import Abbreviations
         from iamsystem import CacheFuzzyAlgos
         from iamsystem import ESpellWiseAlgo
@@ -626,10 +676,12 @@ class FuzzyDocTest(unittest.TestCase):
         for annot in annots:
             print(annot.to_string(debug=True))
         # a resiratory distresssss	0 24	acute respiratory distress (J80)	a(abbs);resiratory(LEVENSHTEIN);distresssss(SOUNDEX) # noqa
+        # end_test_cache_fuzzy_algos
         self.assertEqual(1, len(annots))
 
     def test_fuzzy_regex(self):
         """FuzzyRegex example."""
+        # start_test_fuzzy_regex
         from iamsystem import FuzzyRegex
         from iamsystem import Matcher
         from iamsystem import english_tokenizer
@@ -643,20 +695,22 @@ class FuzzyDocTest(unittest.TestCase):
         split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
         tokenizer = english_tokenizer()
         tokenizer.split = split
-        detector = Matcher(tokenizer=tokenizer)
-        detector.add_labels(labels=["calcium numval mmol/L"])
-        detector.add_stopwords(words=["level", "is", "normal"])
-        detector.add_fuzzy_algo(fuzzy_algo=fuzzy)
-        annots = detector.annot_text(
+        matcher = Matcher(tokenizer=tokenizer)
+        matcher.add_labels(labels=["calcium numval mmol/L"])
+        matcher.add_stopwords(words=["level", "is", "normal"])
+        matcher.add_fuzzy_algo(fuzzy_algo=fuzzy)
+        annots = matcher.annot_text(
             text="the blood calcium level is normal: 2.1 mmol/L", w=1
         )
         for annot in annots:
             print(annot)
         # calcium 2.1 mmol L	10 17;35 45	calcium numval mmol/L
+        # end_test_fuzzy_regex
         self.assertEqual(1, len(annots))
 
     def test_fuzzy_regex_negative_stopwords(self):
         """combine NegativeStopwords with FuzzyRegex."""
+        # start_test_fuzzy_regex_negative_stopwords
         from iamsystem import FuzzyRegex
         from iamsystem import Keyword
         from iamsystem import Matcher
@@ -692,10 +746,12 @@ class FuzzyDocTest(unittest.TestCase):
         for annot in annots:
             print(annot)
         # calcium 2.1 mmol L	10 17;35 45	calcium numval mmol/L
+        # end_test_fuzzy_regex_negative_stopwords
         self.assertEqual(1, len(annots))
 
     def test_word_normalization(self):
         """Stemming example."""
+        # start_test_word_normalization
         from nltk.stem.snowball import FrenchStemmer
 
         from iamsystem import Matcher
@@ -718,12 +774,14 @@ class FuzzyDocTest(unittest.TestCase):
         for annot in annots:
             print(annot)
         # cancer prostatique	0 18	cancer de la prostate (C72)
+        # end_test_word_normalization
         self.assertEqual(1, len(annots))
 
 
 class SpacyDocTest(unittest.TestCase):
     def test_component(self):
         """Test detection with component."""
+        # start_test_component
         from typing import Iterable
         from typing import List
 
@@ -791,6 +849,7 @@ class SpacyDocTest(unittest.TestCase):
         for span in spans:
             print(span._.iamsystem)
         # ic gauche	0 9	Insuffisance Cardiaque Gauche (I50.1)
+        # end_test_component
 
 
 if __name__ == "__main__":
