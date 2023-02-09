@@ -1,15 +1,20 @@
 """ Fuzzy algoriths abstract base classes."""
+import warnings
+
 from abc import ABC
 from abc import abstractmethod
 from typing import Generic
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Sequence
 from typing import Tuple
 
 from typing_extensions import Protocol
 from typing_extensions import runtime_checkable
 
+from iamsystem.fuzzy.util import IWords2ignore
+from iamsystem.fuzzy.util import SimpleWords2ignore
 from iamsystem.matcher.util import IState
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tree.nodes import INode
@@ -160,3 +165,56 @@ class NormLabelAlgo(ContextFreeAlgo[TokenT], INormLabelAlgo, ABC):
         """Returns synonyms of this word
         (e.g. the normalized label of a token)."""
         raise NotImplementedError
+
+
+class StringDistance(NormLabelAlgo, ABC):
+    """Class that computes a string distance between a token of a document
+    and the keywords' tokens."""
+
+    def __init__(
+        self,
+        name: str,
+        min_nb_char: int,
+        words2ignore: Optional[IWords2ignore] = None,
+    ):
+
+        """Create a string distance fuzzy algorithm.
+
+        :param name: string distance algorithm name.
+        :param min_nb_char: the minimum number of characters a word
+          must have in order not to be ignored.
+        """
+        super().__init__(name)
+        self._min_nb_char = min_nb_char
+
+        if words2ignore is None:
+            self._tokens2ignore = SimpleWords2ignore()
+        else:
+            self._tokens2ignore = words2ignore
+
+    @property
+    def min_nb_char(self):
+        """The minimum number of characters a word must have
+        not to be ignored."""
+        return self._min_nb_char
+
+    @min_nb_char.setter
+    def min_nb_char(self, value: int):
+        """Set the minimum number of characters a word must have."""
+        self._min_nb_char = value
+
+    def _is_a_word_to_ignore(self, word: str) -> bool:
+        """Check if this word must be ignored."""
+        return len(
+            word
+        ) < self._min_nb_char or self._tokens2ignore.is_word_2_ignore(word)
+
+    def add_words_to_ignore(self, words: Iterable[str]):
+        """Add words that the algorithm must ignore: no string distance
+        will be computed."""
+        warnings.warn(
+            "Deprecated 'add_words_to_ignore': "
+            "pass these words in the constructor."
+        )
+        for word in words:
+            self._tokens2ignore.add_word(word)

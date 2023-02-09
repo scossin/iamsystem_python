@@ -29,7 +29,9 @@ class MatcherTest(unittest.TestCase):
 
     def test_threshold_0_2(self):
         """Test synonyms returned depend on threshold."""
-        fuzzy_ss = SimStringWrapper(words=["paracetamol"], threshold=0.2)
+        fuzzy_ss = SimStringWrapper(
+            words=["paracetamol"], threshold=0.2, min_nb_char=0
+        )
         syns = list(fuzzy_ss.get_syns_of_word("paracetomol"))
         self.assertEqual(1, len(syns))
         syns = list(fuzzy_ss.get_syns_of_word("para"))

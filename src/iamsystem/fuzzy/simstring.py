@@ -4,11 +4,14 @@ import tempfile
 
 from enum import Enum
 from typing import Iterable
+from typing import Optional
 
 from pysimstring import simstring
 
-from iamsystem.fuzzy.api import NormLabelAlgo
+from iamsystem.fuzzy.api import FuzzyAlgo
+from iamsystem.fuzzy.api import StringDistance
 from iamsystem.fuzzy.api import SynType
+from iamsystem.fuzzy.util import IWords2ignore
 
 
 class ESimStringMeasure(Enum):
@@ -21,7 +24,7 @@ class ESimStringMeasure(Enum):
     OVERLAP = "overlap"
 
 
-class SimStringWrapper(NormLabelAlgo):
+class SimStringWrapper(StringDistance):
     """SimString algorithm interface."""
 
     def __init__(
@@ -30,6 +33,8 @@ class SimStringWrapper(NormLabelAlgo):
         name: str = "simstring",
         measure=ESimStringMeasure.JACCARD,
         threshold=0.5,
+        min_nb_char=5,
+        words2ignore: Optional[IWords2ignore] = None,
     ):
         """Create a fuzzy algorithm that calls simstring.
 
@@ -42,8 +47,14 @@ class SimStringWrapper(NormLabelAlgo):
             :class:`~iamsystem.fuzzy.simstring.ESimStringMeasure`.
             Default JACCARD.
         :param threshold: similarity measure threshold.
+        :param min_nb_char: the minimum number of characters a word
+          must have in order not to be ignored.
+        :param words2ignore: words that must be ignored by the algorithm to
+            avoid false positives, for example English vocabulary words.
         """
-        super().__init__(name=name)
+        super().__init__(
+            name=name, min_nb_char=min_nb_char, words2ignore=words2ignore
+        )
         self.path = tempfile.mkdtemp()
         os.makedirs(self.path, exist_ok=True)
         abs_path = os.path.join(self.path, "terms.simstring")
@@ -56,6 +67,8 @@ class SimStringWrapper(NormLabelAlgo):
 
     def get_syns_of_word(self, word: str) -> Iterable[SynType]:
         """Retrieve simstring similar words."""
+        if self._is_a_word_to_ignore(word):
+            return FuzzyAlgo.NO_SYN
         ss_words = self.ss_reader.retrieve(word)
         return [self.word_to_syn(word=word) for word in ss_words]
 

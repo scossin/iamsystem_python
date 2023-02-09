@@ -1,8 +1,10 @@
 import unittest
 
+from iamsystem import Matcher
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.spellwise import SpellWiseWrapper
+from iamsystem.fuzzy.util import SimpleWords2ignore
 from iamsystem.stopwords.simple import Stopwords
 from iamsystem.tokenization.tokenize import french_tokenizer
 from tests.utils import get_termino_ivg
@@ -65,11 +67,14 @@ class SpellWiseTest(unittest.TestCase):
         self.assertTrue(tuple(["word"]) in syns)
 
     def test_words_to_ignore(self):
-        """If a word is ignored then the algorithm returns nothing."""
-        self.leven.add_words_to_ignore(words=["word"])
-        self.leven.add_words(words=["word"])
-        syns = self.leven.get_syns_of_word("word")
-        self.assertIs(syns, FuzzyAlgo.NO_SYN)
+        """If a word is ignored then the algorithm returns nothing.
+        Deprecated method, words_to_ignore must be passed in init.
+        """
+        with self.assertWarns(Warning):
+            self.leven.add_words_to_ignore(words=["word"])
+            self.leven.add_words(words=["word"])
+            syns = self.leven.get_syns_of_word("word")
+            self.assertIs(syns, FuzzyAlgo.NO_SYN)
 
     def test_soundex(self):
         """Sounds like 'insuffisance'."""
@@ -84,6 +89,42 @@ class SpellWiseTest(unittest.TestCase):
         self.assertTrue(self.tuple_ins not in syns)
         syns = editex.get_syns_of_word("insufizzance")
         self.assertTrue(self.tuple_ins in syns)
+
+
+class SimpleWord2ignoreTest(unittest.TestCase):
+    def test_init(self):
+        """Check words added are ignored."""
+        words = ["couche"]
+        words2ignore = SimpleWords2ignore(words=words)
+        self.assertTrue(words2ignore.is_word_2_ignore(word="couche"))
+        self.assertFalse(words2ignore.is_word_2_ignore(word="autre"))
+
+    def test_without_words_2_ignore(self):
+        """Test a false positive is detected: couche is one string distance
+        away from mouche."""
+        matcher = Matcher()
+        matcher.add_labels(labels=["mouche"])
+        leven: SpellWiseWrapper = SpellWiseWrapper(
+            algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1
+        )
+        leven.add_words(words=matcher.get_keywords_unigrams())
+        matcher.add_fuzzy_algo(leven)
+        annots = matcher.annot_text(text="une couche", w=1)
+        self.assertEqual(1, len(annots))
+
+    def test_with_words_2_ignore(self):
+        matcher = Matcher()
+        matcher.add_labels(labels=["mouche"])
+        words2ignore = SimpleWords2ignore(words=["couche"])
+        leven: SpellWiseWrapper = SpellWiseWrapper(
+            algo=ESpellWiseAlgo.LEVENSHTEIN,
+            max_distance=1,
+            words2ignore=words2ignore,
+        )
+        leven.add_words(words=matcher.get_keywords_unigrams())
+        matcher.add_fuzzy_algo(leven)
+        annots = matcher.annot_text(text="une couche", w=1)
+        self.assertEqual(0, len(annots))
 
 
 if __name__ == "__main__":
