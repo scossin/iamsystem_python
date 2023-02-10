@@ -136,6 +136,16 @@ class AbbreviationsTest(unittest.TestCase):
         long_forms: Iterable[SynType] = self.abbs.get_syns_of_word("avc")
         self.assertEqual(2, len(list(long_forms)))
 
+    def test_add_tokenized_long_form(self):
+        """Test adding a sequence of words."""
+        self.abbs.add_tokenized_long_form(
+            short_form="avc",
+            long_form=["accident", "vasculaire", "cerebral"],
+        )
+        long_forms: List[SynType] = list(self.abbs.get_syns_of_word("avc"))
+        self.assertEqual(1, len(long_forms))
+        self.assertTrue(("accident", "vasculaire", "cerebral") in long_forms)
+
     def test_add_lower_short_form(self):
         """Even though the given short form is uppercase,
         a lowercase word returns the long form."""
@@ -265,7 +275,7 @@ class CacheFuzzyAlgosTest(unittest.TestCase):
 class FuzzyRegexTest(unittest.TestCase):
     def setUp(self) -> None:
         self.fuzzy = FuzzyRegex(
-            algo_name="regex_num",
+            name="regex_num",
             pattern=r"^\d*[.,]?\d*$",
             pattern_name="numval",
         )
@@ -298,10 +308,10 @@ class FuzzyRegexTest(unittest.TestCase):
         """It works with a matcher."""
         keyword = Keyword(label="CALCIUM NUMVAL mmol/L")
         self.matcher.add_keywords(keywords=[keyword])
-        annots = self.matcher.annot_text(text="calcium 2.1 mmol/L", w=1)
+        annots = self.matcher.annot_text(text="calcium 2.1 mmol/L")
         self.assertEqual(0, len(annots))
         self.matcher.add_fuzzy_algo(self.fuzzy)
-        annots = self.matcher.annot_text(text="calcium 2.1 mmol/L", w=1)
+        annots = self.matcher.annot_text(text="calcium 2.1 mmol/L")
         self.assertEqual(1, len(annots))
 
 

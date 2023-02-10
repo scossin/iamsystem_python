@@ -8,10 +8,17 @@ Matcher
 
 .. autoclass:: iamsystem.Matcher
    :members:
-   :undoc-members:
+   :undoc-members: build
    :show-inheritance:
 
    .. automethod:: __init__
+
+Matcher build
+^^^^^^^^^^^^^
+
+.. autoclass:: iamsystem.Matcher
+   :members: build
+   :noindex:
 
 Annotation
 ----------
@@ -129,7 +136,6 @@ Order tokens
 .. autofunction:: iamsystem.tokenize_and_order_decorator
 
 
-
 Stopwords classes
 -----------------
 
@@ -240,16 +246,19 @@ ESpellWiseAlgo
 
 SimString
 ^^^^^^^^^
+
 SimStringWrapper
 """"""""""""""""
-.. autoclass:: iamsystem.fuzzy.simstring.SimStringWrapper
+.. autoclass:: iamsystem.SimStringWrapper
    :members:
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 ESimStringMeasure
 """""""""""""""""
-.. autoclass:: iamsystem.fuzzy.simstring.ESimStringMeasure
+.. autoclass:: iamsystem.ESimStringMeasure
    :members:
    :undoc-members:
    :show-inheritance:

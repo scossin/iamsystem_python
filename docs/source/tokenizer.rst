@@ -2,16 +2,18 @@ Tokenizer
 -----------
 The iamsystem matcher is highly dependent on how documents and keywords are tokenized and normalized.
 The :ref:`api_doc:ITokenizer` is responsible for turning text into tokens.
-To do so, the :ref:`api_doc:TokenizerImp` class performs tokenization with two inner functions:
+To do so, the :ref:`api_doc:TokenizerImp` class performs alphanumeric tokenization with two inner functions:
 
 - split the text into (start,end) offsets
 - normalize each token
 
+The :ref:`api_doc:english_tokenizer` and :ref:`api_doc:french_tokenizer` are concrete implementations.
+
 .. _adapter: https://en.wikipedia.org/wiki/Adapter_pattern
 
-The :ref:`api_doc:english_tokenizer` and :ref:`api_doc:french_tokenizer` are concrete implementations.
-To use another library to perform the tokenization you can build an `adapter`_
-by creating a new implementation of the a :ref:`api_doc:ITokenizer` class.
+Other libraries offer more elaborate tokenizers, I recommend you use them.
+To use the tokenizer of another library you can build an `adapter`_
+by creating a new implementation of the a :ref:`api_doc:ITokenizer` interface.
 For example, this package provides a :ref:`spacy:spaCy` custom component that consumes spaCy's tokenizer.
 
 Default split function
@@ -75,9 +77,9 @@ Given a wide window, the keyword can be found.
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 7, 11
+    :emphasize-lines: 9
     :start-after: # start_test_unordered_words_seq
     :end-before: # end_test_unordered_words_seq
 
-Note that the window size is calculated with the number of tokens.
-This approach is not suitable if the document is very long or the number of keywords is big.
+*order_tokens* parameter changes iamsystem's matching strategy but it doesn't change the document's tokens order.
+This approach is not suitable if the document is very long or the number of keywords is large.

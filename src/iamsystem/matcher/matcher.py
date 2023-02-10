@@ -1,23 +1,37 @@
-""" Main public API of the package, it annotates a document with keywords."""
+""" Main public API of the package."""
 from __future__ import annotations
 
+import typing
 import warnings
 
 from collections import defaultdict
+from typing import Any
 from typing import Callable
 from typing import Collection
+from typing import Dict
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Sequence
 from typing import Set
+from typing import Tuple
+from typing import Union
 
-from iamsystem import Terminology
+from iamsystem.fuzzy.abbreviations import Abbreviations
 from iamsystem.fuzzy.api import FuzzyAlgo
+from iamsystem.fuzzy.api import INormLabelAlgo
 from iamsystem.fuzzy.api import ISynsProvider
 from iamsystem.fuzzy.api import SynAlgos
+from iamsystem.fuzzy.cache import CacheFuzzyAlgos
 from iamsystem.fuzzy.exact import ExactMatch
+from iamsystem.fuzzy.norm_fun import WordNormalizer
+from iamsystem.fuzzy.regex import FuzzyRegex
+from iamsystem.fuzzy.simstring import SimStringWrapper
+from iamsystem.fuzzy.spellwise import SpellWiseWrapper
+from iamsystem.fuzzy.util import SimpleWords2ignore
 from iamsystem.keywords.api import IKeyword
 from iamsystem.keywords.api import IStoreKeywords
+from iamsystem.keywords.collection import Terminology
 from iamsystem.keywords.keywords import Keyword
 from iamsystem.keywords.util import get_unigrams
 from iamsystem.matcher.annotation import Annotation
@@ -31,10 +45,13 @@ from iamsystem.matcher.util import TransitionState
 from iamsystem.stopwords.api import ISimpleStopwords
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.api import IStoreStopwords
+from iamsystem.stopwords.negative import NegativeStopwords
+from iamsystem.stopwords.simple import NoStopwords
 from iamsystem.stopwords.simple import Stopwords
 from iamsystem.tokenization.api import ITokenizer
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.tokenize import french_tokenizer
+from iamsystem.tokenization.tokenize import tokenize_and_order_decorator
 from iamsystem.tree.nodes import EMPTY_NODE
 from iamsystem.tree.nodes import INode
 from iamsystem.tree.trie import Trie
@@ -53,13 +70,16 @@ class Matcher(IMatcher[TokenT]):
         stopwords: IStopwords[TokenT] = None,
     ):
         """Create an IAMsystem matcher to annotate documents.
+        Prefer :py:meth:`~iamsystem.Matcher.build` method to create a matcher.
 
         :param tokenizer: default :func:`~iamsystem.french_tokenizer`.
             A :class:`~iamsystem.ITokenizer` instance responsible for
             tokenizing and normalizing.
-        :param stopwords: provide a :class:`~iamsystem.IStopwords`.
+        :param stopwords: a :class:`~iamsystem.IStopwords` to ignore empty
+            words in keywords and documents.
             If None, default to :class:`~iamsystem.Stopwords`.
         """
+        self._w = 1
         self._tokenizer = tokenizer
         self._fuzzy_algos: List[FuzzyAlgo[TokenT]] = [ExactMatch()]
         self._trie: Trie = Trie()
@@ -71,14 +91,45 @@ class Matcher(IMatcher[TokenT]):
             self._stopwords = Stopwords()
 
     @property
+    def stopwords(self) -> IStopwords[TokenT]:
+        """Return the :class:`~iamsystem.IStopwords` used by the matcher."""
+        return self._stopwords
+
+    @stopwords.setter
+    def stopwords(self, stopwords: IStopwords[TokenT]) -> None:
+        """Set the stopwords.
+        Note that keywords already added will not be modified.
+
+        :param stopwords: a :class:`~iamsystem.IStopwords` to ignore empty
+            words in keywords and documents.
+        :return: None
+        """
+        self._stopwords = stopwords
+
+    @property
+    def tokenizer(self) -> ITokenizer[TokenT]:
+        """Return the :class:`~iamsystem.ITokenizer` used by the matcher."""
+        return self._tokenizer
+
+    @tokenizer.setter
+    def tokenizer(self, tokenizer: ITokenizer[TokenT]) -> None:
+        """Change the tokenizer.
+        Note that keywords already added will not be modified.
+
+        :param tokenizer: A :class:`~iamsystem.ITokenizer` instance
+            responsible for tokenizing and normalizing.
+        :return: None
+        """
+        self._tokenizer = tokenizer
+
+    @property
     def remove_nested_annots(self) -> bool:
-        """Matcher config: whether to remove nested annotations.
-        Default to True."""
+        """Whether to remove nested annotations. Default to True."""
         return self._remove_nested_annots
 
     @remove_nested_annots.setter
     def remove_nested_annots(self, remove_nested_annots: bool) -> None:
-        """Set remove nested annotation value. Default to True.
+        """Set remove_nested_annots value. Default to True.
 
         :param remove_nested_annots: if two annotations overlap,
             remove the shorter one. Default to True since
@@ -86,6 +137,22 @@ class Matcher(IMatcher[TokenT]):
         :return: None
         """
         self._remove_nested_annots = remove_nested_annots
+
+    @property
+    def w(self) -> int:
+        """Return the window parameter of this matcher."""
+        return self._w
+
+    @w.setter
+    def w(self, value: int) -> None:
+        """Set the window parameter. Default to 1.
+
+        :param value:  How much discontinuous keyword's tokens
+            to find can be. By default, w=1 means the sequence must be
+            continuous. w=2 means each token can be separated by another token.
+        :return: None
+        """
+        self._w = value
 
     @property
     def fuzzy_algos(self) -> Iterable[FuzzyAlgo[TokenT]]:
@@ -194,6 +261,11 @@ class Matcher(IMatcher[TokenT]):
         """
         self._fuzzy_algos.append(fuzzy_algo)
 
+    def get_initial_state(self) -> INode:
+        """Return the initial state from which iamsystem algorithm will start
+        searching for a sequence of keywords'tokens."""
+        return self._trie.get_initial_state()
+
     def get_synonyms(
         self, tokens: Sequence[TokenT], i: int, w_states: List[List[IState]]
     ) -> Iterable[SynAlgos]:
@@ -213,41 +285,216 @@ class Matcher(IMatcher[TokenT]):
         synonyms: List[SynAlgos] = list(syns_collector.items())
         return synonyms
 
-    def annot_text(self, text: str, w: int = 1) -> List[Annotation[TokenT]]:
+    def annot_text(self, text: str) -> List[Annotation[TokenT]]:
         """Annotate a document.
 
         :param text: the document to annotate.
-        :param w: Window. How much discontinuous keyword's tokens to find
-            can be. By default, w=1 means the sequence must be continuous.
-            w=2 means each token can be separated by another token.
         :return: a list of :class:`~iamsystem.Annotation`.
         """
         tokens: Sequence[TokenT] = self.tokenize(text)
-        return self.annot_tokens(tokens=tokens, w=w)
+        return self.annot_tokens(tokens=tokens)
 
     def annot_tokens(
-        self, tokens: Sequence[TokenT], w: int
+        self, tokens: Sequence[TokenT]
     ) -> List[Annotation[TokenT]]:
         """Annotate a sequence of tokens.
 
         :param tokens: an ordered or unordered sequence of tokens.
-        :param w: Window. How much discontinuous keyword's tokens
-            to find can be. By default, w=1 means the sequence must be
-            continuous. w=2 means each token can be separated by another token.
-        :param remove_nested_annots: if two annotations overlap,
-            remove the shorter one.
         :return: a list of :class:`~iamsystem.Annotation`.
         """
         annots = detect(
             tokens=tokens,
-            w=w,
-            initial_state=self._trie.root_node,
+            w=self.w,
+            initial_state=self.get_initial_state(),
             syns_provider=self,
             stopwords=self,
         )
         if self._remove_nested_annots:
             annots = rm_nested_annots(annots=annots, keep_ancestors=False)
         return annots
+
+    @classmethod
+    def build(
+        cls,
+        keywords: Iterable[Union[str, IKeyword]],
+        tokenizer: ITokenizer = None,
+        stopwords: Union[IStopwords[TokenT], Iterable[str]] = NoStopwords(),
+        w=1,
+        order_tokens=False,
+        negative=False,
+        remove_nested_annots=True,
+        string_distance_ignored_w: Optional[Iterable[str]] = None,
+        abbreviations: Optional[Iterable[Tuple[str, str]]] = None,
+        spellwise: Optional[List[Dict[Any]]] = None,
+        simstring: Optional[List[Dict[Any]]] = None,
+        normalizers: Optional[List[Dict[Any]]] = None,
+        fuzzy_regex: Optional[List[Dict[Any]]] = None,
+    ) -> Matcher[TokenT]:
+        """
+        Create an IAMsystem matcher to annotate documents.
+
+        :param keywords: an iterable of keywords string or
+            :class:`~iamsystem.IKeyword` instances.
+        :param tokenizer: default :func:`~iamsystem.french_tokenizer`.
+            A :class:`~iamsystem.ITokenizer` instance responsible for
+            tokenizing and normalizing.
+        :param stopwords: provide a :class:`~iamsystem.IStopwords`.
+            If None, default to :class:`~iamsystem.Stopwords`.
+        :param w: Window. How much discontinuous keyword's tokens
+            to find can be. By default, w=1 means the sequence must be
+            continuous. w=2 means each token can be separated by another token.
+        :param order_tokens: order tokens alphabetically if order doesn't
+            matter in the matching strategy.
+        :param negative: every unigram not in the keywords is a stopword.
+            Default to False. If stopwords are also passed, they will be
+            removed in the unigrams and so still be stopwords.
+        :param remove_nested_annots: if two annotations overlap,
+            remove the shorter one. Default to True
+        :param string_distance_ignored_w: words ignored by string distance
+            algorithms to avoid false positives matched.
+        :param abbreviations: an iterable of tuples (short_form, long_form).
+        :param spellwise: an iterable of :class:`~iamsystem.SpellWiseWrapper`
+            init parameters. if 'string_distance_ignored_w' is set, these words
+            parameter will be passed.
+        :param simstring: an iterable of :class:`~iamsystem.SimStringWrapper`
+            init parameters. if 'string_distance_ignored_w' is set, these words
+            parameter will be passed.
+        :param normalizers: an iterable of :class:`~iamsystem.WordNormalizer`
+            init parameters.
+        :param fuzzy_regex: an iterable of :class:`~iamsystem.FuzzyRegex`
+            init parameters.
+        """
+
+        # Tokenizer configuration
+        if tokenizer is None:
+            tokenizer = french_tokenizer()
+
+        if order_tokens:
+            tokenizer.tokenize = tokenize_and_order_decorator(
+                tokenizer.tokenize
+            )
+
+        # Start building and configuring the matcher
+
+        matcher = Matcher(tokenizer=tokenizer)
+        # Decorate tokenize function to order alphabetically
+        matcher.order_tokens = order_tokens
+
+        # Configure stopwords
+        if isinstance(stopwords, Iterable):
+            matcher.add_stopwords(words=stopwords)
+        elif isinstance(stopwords, IStopwords):
+            matcher.stopwords = stopwords
+
+        # Configure annot_text function
+        matcher.w = w
+        matcher.remove_nested_annots = remove_nested_annots
+
+        # Add the keywords
+        for kw in keywords:
+            if isinstance(kw, str):
+                matcher.add_labels(labels=[kw])
+            elif isinstance(kw, IKeyword):
+                matcher.add_keyword(keyword=kw)
+            else:
+                raise ValueError(
+                    f"{kw.__class__} is neither a string "
+                    f"or a class that implements the IKeyword interface."
+                )
+
+        # add negative stopwords after stopwords and keywords are added
+        # since this class needs keywords'unigrams without stopwords.
+        if negative:
+            matcher.stopwords = NegativeStopwords(
+                words_to_keep=matcher.get_keywords_unigrams()
+            )
+
+        # fuzzy algorithms parameterization
+
+        def _add_algo_in_cache_closure(
+            cache: CacheFuzzyAlgos, matcher: Matcher
+        ):
+            """Internal build function to add cache_fuzzy algorithm to the
+            list of fuzzy algorithms the first time an algorithm is added in
+            cache."""
+
+            def add_algo_in_cache(algo=INormLabelAlgo):
+                """Add an algorithm in cache."""
+                if cache not in matcher.fuzzy_algos:
+                    matcher.add_fuzzy_algo(fuzzy_algo=cache)
+                cache.add_algo(algo=algo)
+
+            return add_algo_in_cache
+
+        cache = CacheFuzzyAlgos()
+        add_algo_in_cache = _add_algo_in_cache_closure(
+            cache=cache, matcher=matcher
+        )
+
+        # Abbreviations
+        if abbreviations is not None:
+            _abbreviations = Abbreviations(name="abbs")
+            matcher.add_fuzzy_algo(fuzzy_algo=_abbreviations)
+            for abb in abbreviations:
+                short_form, long_form = abb
+                _abbreviations.add(
+                    short_form=short_form,
+                    long_form=long_form,
+                    tokenizer=matcher.tokenizer,
+                )
+
+        # WordNormalizer
+        if normalizers is not None:
+            for params in normalizers:
+                word_normalizer = WordNormalizer(**params)
+                word_normalizer.add_words(
+                    words=matcher.get_keywords_unigrams()
+                )
+                add_algo_in_cache(algo=word_normalizer)
+
+        # FuzzyRegex
+        if fuzzy_regex is not None:
+            for params in fuzzy_regex:
+                fuzzy = FuzzyRegex(**params)
+                add_algo_in_cache(algo=fuzzy)
+                if negative:
+                    negative_stopwords = typing.cast(
+                        NegativeStopwords,
+                        matcher.stopwords,
+                    )
+                    negative_stopwords.add_fun_is_a_word_to_keep(
+                        fuzzy.token_matches_pattern
+                    )
+
+        # String Distances
+        # words ignored by string distance algorithms
+        words2ignore = None
+        if string_distance_ignored_w is not None:
+            words2ignore = SimpleWords2ignore(words=string_distance_ignored_w)
+
+        # Parameterize spellwise
+        if spellwise is not None:
+            for params in spellwise:
+                # don't override user's 'words2ignore':
+                if "words2ignore" not in params:
+                    params["words2ignore"] = words2ignore
+                spellwise = SpellWiseWrapper(**params)
+                spellwise.add_words(words=matcher.get_keywords_unigrams())
+                add_algo_in_cache(algo=spellwise)
+
+        # Parameterize simstring
+        if simstring is not None:
+            for params in simstring:
+                # don't override user's 'words2ignore':
+                if "words2ignore" not in params:
+                    params["words2ignore"] = words2ignore
+                ss_algo = SimStringWrapper(
+                    words=matcher.get_keywords_unigrams(),
+                    **params,
+                )
+                add_algo_in_cache(algo=ss_algo)
+
+        return matcher
 
 
 def detect(

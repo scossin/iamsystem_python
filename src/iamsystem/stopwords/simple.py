@@ -35,8 +35,7 @@ class Stopwords(SimpleStopwords[TokenT]):
         :param words: a list of string.
         :return: None
         """
-        for word in words:
-            self._stopwords.add(word)
+        self._stopwords.update(words)
 
 
 class NoStopwords(SimpleStopwords[TokenT]):

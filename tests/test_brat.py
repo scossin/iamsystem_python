@@ -136,8 +136,9 @@ class BratDocumentTest(unittest.TestCase):
         term1 = Term(label="North America", code="NA")
         term2 = Term(label="South America", code="SA")
         matcher.add_keywords(keywords=[term1, term2])
+        matcher.w = 3
         self.text_america = "North and South America"
-        self.annots = matcher.annot_text(text=self.text_america, w=3)
+        self.annots = matcher.annot_text(text=self.text_america)
 
     def test_add_entity(self):
         """Add a Brat entity works."""
@@ -172,7 +173,8 @@ class BratDocumentTest(unittest.TestCase):
         matcher = Matcher()
         term1 = Term(label="North America", code="NA")
         matcher.add_keywords(keywords=[term1])
-        annots = matcher.annot_text(text=self.text_america, w=3)
+        matcher.w = 3
+        annots = matcher.annot_text(text=self.text_america)
         brat_document = BratDocument()
         brat_document.add_annots(
             annots, text=self.text_america, brat_type="COUNTRY"

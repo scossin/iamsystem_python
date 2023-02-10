@@ -111,7 +111,7 @@ class SpellWiseWrapper(StringDistance):
         """
         words = list(words)
         words_filtered = [
-            word for word in words if not self._is_a_word_to_ignore(word=word)
+            word for word in words if not len(word) < self.min_nb_char
         ]
         n_removed = len(words) - len(words_filtered)
         if n_removed != 0 and warn:

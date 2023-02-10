@@ -23,7 +23,6 @@ Each entity corresponds to an annotation:
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 12
     :start-after: # start_test_brat_document
     :end-before: # end_test_brat_document
 
@@ -44,7 +43,6 @@ in a :ref:`api_doc:Keyword` subclass attribute and to pass the attribute name to
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 18
     :start-after: # start_test_brat_doc_keyword
     :end-before: # end_test_brat_doc_keyword
 

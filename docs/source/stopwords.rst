@@ -12,7 +12,7 @@ to denote an entity that has been incompletely characterized.
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 7
+    :emphasize-lines: 9
     :start-after: # start_test_add_stopword
     :end-before: # end_test_add_stopword
 
@@ -21,7 +21,7 @@ NegativeStopwords
 ^^^^^^^^^^^^^^^^^
 Sometimes it's useful to ignore all the words but those of the keywords.
 For example, we want to find the label *"calcium blood"* whatever the words between calcium and blood
-are as long as the order is kept.
+as long as the order is kept.
 One solution would be to change the :ref:`matcher:Context window (w)`.
 Another solution is to use :ref:`api_doc:NegativeStopwords` to ignore all words except
 those that the user wants to keep:
@@ -30,8 +30,5 @@ those that the user wants to keep:
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 11,13
     :start-after: # start_test_negative_stopword
     :end-before: # end_test_negative_stopword
-
-Note that you can use the :ref:`api_doc:Terminology` class to retrieve all the unigrams of your keywords.

@@ -25,24 +25,17 @@ See the [documentation](https://iamsystem-python.readthedocs.io/en/latest/) for 
 ### Quick example
 
 ```python
-from iamsystem import Matcher, Abbreviations, SpellWiseWrapper,\
-    ESpellWiseAlgo
-matcher = Matcher()
-# add a list of words to detect
-matcher.add_labels(labels=["North America", "South America"])
-matcher.add_stopwords(words=["and"])
-# add a list of abbreviations (optional)
-abbs = Abbreviations(name="common abbreviations")
-abbs.add(short_form="amer", long_form="America", tokenizer=matcher)
-matcher.add_fuzzy_algo(fuzzy_algo=abbs)
-# add a string distance algorithm (optional)
-levenshtein = SpellWiseWrapper(
-    ESpellWiseAlgo.LEVENSHTEIN, max_distance=1
+from iamsystem import ESpellWiseAlgo
+from iamsystem import Matcher
+
+matcher = Matcher.build(
+    keywords=["North America", "South America"],
+    stopwords=["and"],
+    abbreviations=[("amer", "America")],
+    spellwise=[dict(algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)],
+    w=2,
 )
-levenshtein.add_words(words=matcher.get_keywords_unigrams())
-matcher.add_fuzzy_algo(fuzzy_algo=levenshtein)
-# perform semantic annotation:
-annots = matcher.annot_text(text="Northh and south Amer.", w=2)
+annots = matcher.annot_text(text="Northh and south Amer.")
 for annot in annots:
     print(annot)
 # Northh Amer	0 6;17 21	North America

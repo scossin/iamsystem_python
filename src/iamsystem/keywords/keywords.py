@@ -13,7 +13,7 @@ class Keyword(IKeyword):
         self.label = label
 
     def get_kb_id(self):
-        """Get the knowledge base id of this keyword.
+        """Return the id of this keyword in a knowledge base.
         It returns the label if this method is not overriden in the subclass.
 
         :return: A unique identifier.

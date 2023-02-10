@@ -15,27 +15,17 @@ def print(o) -> None:
 
 class MatcherDocTest(unittest.TestCase):
     def test_readme_example(self):
-        from iamsystem import Abbreviations
         from iamsystem import ESpellWiseAlgo
         from iamsystem import Matcher
-        from iamsystem import SpellWiseWrapper
 
-        matcher = Matcher()
-        # add a list of words to detect
-        matcher.add_labels(labels=["North America", "South America"])
-        matcher.add_stopwords(words=["and"])
-        # add a list of abbreviations (optional)
-        abbs = Abbreviations(name="common abbreviations")
-        abbs.add(short_form="amer", long_form="America", tokenizer=matcher)
-        matcher.add_fuzzy_algo(fuzzy_algo=abbs)
-        # add a string distance algorithm (optional)
-        levenshtein = SpellWiseWrapper(
-            ESpellWiseAlgo.LEVENSHTEIN, max_distance=1
+        matcher = Matcher.build(
+            keywords=["North America", "South America"],
+            stopwords=["and"],
+            abbreviations=[("amer", "America")],
+            spellwise=[dict(algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)],
+            w=2,
         )
-        levenshtein.add_words(words=matcher.get_keywords_unigrams())
-        matcher.add_fuzzy_algo(fuzzy_algo=levenshtein)
-        # perform semantic annotation:
-        annots = matcher.annot_text(text="Northh and south Amer.", w=2)
+        annots = matcher.annot_text(text="Northh and south Amer.")
         for annot in annots:
             print(annot)
         # Northh Amer	0 6;17 21	North America
@@ -47,11 +37,12 @@ class MatcherDocTest(unittest.TestCase):
         # start_test_exact_match_keywords
         from iamsystem import Matcher
 
-        labels = ["acute respiratory distress syndrome", "diarrrhea"]
-        text = "Pt c/o Acute Respiratory Distress Syndrome and diarrrhea"
-        matcher = Matcher()
-        matcher.add_labels(labels=labels)
-        annots = matcher.annot_text(text=text)
+        matcher = Matcher.build(
+            keywords=["acute respiratory distress syndrome", "diarrrhea"]
+        )
+        annots = matcher.annot_text(
+            text="Pt c/o Acute Respiratory Distress " "Syndrome and diarrrhea"
+        )
         for annot in annots:
             print(annot)
         # Acute Respiratory Distress Syndrome	7 42	acute respiratory distress syndrome # noqa
@@ -62,7 +53,6 @@ class MatcherDocTest(unittest.TestCase):
             "distress syndrome",
             str(annots[0]),
         )
-        print(str(annots[1]))
         self.assertEqual("diarrrhea	47 56	diarrrhea", str(annots[1]))
 
     def test_exact_match_terms(self):
@@ -74,8 +64,7 @@ class MatcherDocTest(unittest.TestCase):
         term1 = Term(label="acute respiratory distress syndrome", code="J80")
         term2 = Term(label="diarrrhea", code="R19.7")
         text = "Pt c/o acute respiratory distress syndrome and diarrrhea"
-        matcher = Matcher()
-        matcher.add_keywords(keywords=[term1, term2])
+        matcher = Matcher.build(keywords=[term1, term2])
         annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
@@ -89,15 +78,59 @@ class MatcherDocTest(unittest.TestCase):
         )
         self.assertEqual("diarrrhea	47 56	diarrrhea (R19.7)", str(annots[1]))
 
+    def test_exact_match_custom_keyword(self):
+        """Matcher with Term class."""
+        # start_test_exact_match_custom_keyword
+        from iamsystem import Keyword
+        from iamsystem import Matcher
+        from iamsystem import Term
+
+        class MyKeyword(Keyword):
+            def __init__(
+                self, label: str, category: str, kb_name: str, uri: str
+            ):
+                """label is the only mandatory attribute."""
+                super().__init__(label=label)
+                self.kb_name = kb_name
+                self.category = category
+                self.uri = uri
+
+            def get_kb_id(self):
+                """Called by annot.to_dict()"""
+                return self.uri
+
+            def __str__(self):
+                """Called by print(annot)"""
+                return f"{self.uri}"
+
+        term1 = MyKeyword(
+            label="acute respiratory distress syndrome",
+            category="disease",
+            kb_name="wikipedia",
+            uri="https://www.wikidata.org/wiki/Q344873",
+        )
+        term2 = Term(label="diarrrhea", code="R19.7")
+        text = "Pt c/o acute respiratory distress syndrome and diarrrhea"
+        matcher = Matcher.build(keywords=[term1, term2])
+        annots = matcher.annot_text(text=text)
+        for annot in annots:
+            print(annot)
+        # acute respiratory distress syndrome	7 42	https://www.wikidata.org/wiki/Q344873 # noqa
+        # diarrrhea	47 56	diarrrhea (R19.7)
+        # end_test_exact_match_custom_keyword
+        self.assertEqual(
+            "acute respiratory distress syndrome	7 42	https://www.wikidata.org/wiki/Q344873",  # noqa
+            str(annots[0]),
+        )
+        self.assertEqual("diarrrhea	47 56	diarrrhea (R19.7)", str(annots[1]))
+
     def test_window(self):
         """Matcher with a window different than 1."""
         # start_test_window
         from iamsystem import Matcher
 
-        labels = ["calcium level"]
-        matcher = Matcher()
-        matcher.add_labels(labels=labels)
-        annots = matcher.annot_text(text="calcium blood level", w=2)
+        matcher = Matcher.build(keywords=["calcium level"], w=2)
+        annots = matcher.annot_text(text="calcium blood level")
         for annot in annots:
             print(annot)
         # calcium level	0 7;14 19	calcium level
@@ -112,12 +145,9 @@ class MatcherDocTest(unittest.TestCase):
         # start_test_fail_order
         from iamsystem import Matcher
 
-        labels = ["calcium level"]
-        matcher = Matcher()
-        matcher.add_labels(labels=labels)
-        annots = matcher.annot_text(text="level calcium", w=2)
-        print(len(annots))
-        # 0
+        matcher = Matcher.build(keywords=["calcium level"], w=2)
+        annots = matcher.annot_text(text="level calcium")
+        print(len(annots))  # 0
         # end_test_fail_order
         self.assertEqual(0, len(annots))
 
@@ -171,8 +201,7 @@ class TokenizerDocTest(unittest.TestCase):
         text = "Pt c/o acute respiratory distress syndrome. RT-PCR sars-cov+"
         tokenizer = english_tokenizer()
         tokenizer.split = split_find_iter_closure(pattern=r"(\w+|\+)")
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_keywords(keywords=[term1])
+        matcher = Matcher.build(keywords=[term1], tokenizer=tokenizer)
         annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
@@ -188,15 +217,16 @@ class TokenizerDocTest(unittest.TestCase):
         # start_test_unordered_words_seq
         from iamsystem import Matcher
         from iamsystem import english_tokenizer
-        from iamsystem import tokenize_and_order_decorator
 
         text = "the level of calcium can measured in the blood."
         tokenizer = english_tokenizer()
-        tokenizer.tokenize = tokenize_and_order_decorator(tokenizer.tokenize)
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_labels(labels=["blood calcium level"])
-        tokens = matcher.tokenize(text=text)
-        annots = matcher.annot_tokens(tokens=tokens, w=len(tokens))
+        matcher = Matcher.build(
+            keywords=["blood calcium level"],
+            tokenizer=tokenizer,
+            order_tokens=True,
+            w=5,
+        )
+        annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
         # level calcium blood	4 9;13 20;41 46	blood calcium level
@@ -212,11 +242,12 @@ class StopwordsTest(unittest.TestCase):
         from iamsystem import Term
         from iamsystem import english_tokenizer
 
-        tokenizer = english_tokenizer()
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_stopwords(words=["unspecified"])
         term = Term(label="Essential hypertension, unspecified", code="I10.9")
-        matcher.add_keywords(keywords=[term])
+        matcher = Matcher.build(
+            keywords=[term],
+            tokenizer=english_tokenizer(),
+            stopwords=["unspecified"],
+        )
         text = "Medical history: essential hypertension"
         annots = matcher.annot_text(text=text)
         for annot in annots:
@@ -232,26 +263,11 @@ class StopwordsTest(unittest.TestCase):
     def test_negative_stopword(self):
         """Matcher with negatives stopwords."""
         # start_test_negative_stopword
-        from iamsystem import Keyword
         from iamsystem import Matcher
-        from iamsystem import NegativeStopwords
-        from iamsystem import NoStopwords
-        from iamsystem import Terminology
-        from iamsystem import english_tokenizer
 
         text = "the level of calcium can be measured in the blood."
-        termino = Terminology()
-        termino.add_keywords(keywords=[Keyword(label="calcium blood")])
-        neg_stopwords = NegativeStopwords()
-        tokenizer = english_tokenizer()
-        neg_stopwords.add_words(
-            words_to_keep=termino.get_unigrams(
-                tokenizer=tokenizer, stopwords=NoStopwords()
-            )
-        )
-        matcher = Matcher(tokenizer=tokenizer, stopwords=neg_stopwords)
-        matcher.add_keywords(keywords=termino)
-        annots = matcher.annot_text(text=text, w=1)
+        matcher = Matcher.build(keywords=["calcium blood"], negative=True)
+        annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
         # calcium blood	13 20;44 49	calcium blood
@@ -263,22 +279,15 @@ class AnnotationDocTest(unittest.TestCase):
     def test_annotation_format(self):
         """String representation of annotation."""
         # start_test_annotation_format
-        from iamsystem import Abbreviations
         from iamsystem import Matcher
         from iamsystem import Term
 
-        matcher = Matcher()
-        abb = Abbreviations(name="abbs")
-        abb.add(
-            short_form="infect",
-            long_form="infectious",
-            tokenizer=matcher,
-        )
-        matcher.add_fuzzy_algo(abb)
         term = Term(label="infectious disease", code="D007239")
-        matcher.add_keywords(keywords=[term])
+        matcher = Matcher.build(
+            keywords=[term], abbreviations=[("infect", "infectious")], w=2
+        )
         text = "Infect mononucleosis disease"
-        annots = matcher.annot_text(text=text, w=2)
+        annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
             print(annot.to_string(text=text))
@@ -312,10 +321,11 @@ class AnnotationDocTest(unittest.TestCase):
         term1 = Term(label="Infectious Disease", code="J80")
         term2 = Term(label="infectious disease", code="C0042029")
         term3 = Term(label="infectious disease, unspecified", code="C0042029")
-        tokenizer = english_tokenizer()
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_stopwords(words=["unspecified"])
-        matcher.add_keywords(keywords=[term1, term2, term3])
+        matcher = Matcher.build(
+            keywords=[term1, term2, term3],
+            tokenizer=english_tokenizer(),
+            stopwords=["unspecified"],
+        )
         text = "History of infectious disease"
         annots = matcher.annot_text(text=text)
         annot = annots[0]
@@ -337,32 +347,32 @@ class AnnotationDocTest(unittest.TestCase):
         # start_test_annotation_overlapping_ancestors
         from iamsystem import Matcher
 
-        matcher = Matcher()
-        matcher.add_labels(labels=["lung", "lung cancer"])
+        matcher = Matcher.build(keywords=["lung", "lung cancer"], w=1)
         text = "Presence of a lung cancer"
-        annots = matcher.annot_text(text=text, w=1)
+        annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
         # lung cancer	14 25	lung cancer
-        self.assertEqual("lung cancer	14 25	lung cancer", str(annots[0]))
         matcher.remove_nested_annots = False
-        annots = matcher.annot_text(text=text, w=1)
-        for annot in annots:
+        annots_2 = matcher.annot_text(text=text)
+        for annot in annots_2:
             print(annot)
         # lung	14 18	lung
         # lung cancer	14 25	lung cancer
         # end_test_annotation_overlapping_ancestors
-        self.assertEqual("lung	14 18	lung", str(annots[0]))
+        self.assertEqual("lung cancer	14 25	lung cancer", str(annots[0]))
+        self.assertEqual("lung	14 18	lung", str(annots_2[0]))
 
     def test_annotation_overlapping_not_ancestors(self):
         """Case of overlapping but not an ancestor."""
         # start_test_annotation_overlapping_not_ancestors
         from iamsystem import Matcher
 
-        matcher = Matcher()
-        matcher.add_labels(labels=["North America", "South America"])
+        matcher = Matcher.build(
+            keywords=["North America", "South America"], w=3
+        )
         text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
+        annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
         # North America	0 5;16 23	North America
@@ -379,8 +389,7 @@ class AnnotationDocTest(unittest.TestCase):
         # start_test_annotation_partial_overlap
         from iamsystem import Matcher
 
-        matcher = Matcher()
-        matcher.add_labels(labels=["lung cancer", "cancer prognosis"])
+        matcher = Matcher.build(keywords=["lung cancer", "cancer prognosis"])
         annots = matcher.annot_text(text="lung cancer prognosis")
         for annot in annots:
             print(annot)
@@ -416,11 +425,10 @@ class BratDocTest(unittest.TestCase):
         from iamsystem import Matcher
         from iamsystem import Term
 
-        matcher = Matcher()
         term1 = Term(label="North America", code="NA")
-        matcher.add_keywords(keywords=[term1])
+        matcher = Matcher.build(keywords=[term1], w=3)
         text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
+        annots = matcher.annot_text(text=text)
         brat_document = BratDocument()
         brat_document.add_annots(
             annots, text=text, brat_type="CONTINENT", keyword_attr=None
@@ -449,11 +457,10 @@ class BratDocTest(unittest.TestCase):
         from iamsystem import BratDocument
         from iamsystem import Matcher
 
-        matcher = Matcher()
         term1 = Entity(label="North America", code="NA", brat_type="CONTINENT")
-        matcher.add_keywords(keywords=[term1])
+        matcher = Matcher.build(keywords=[term1], w=3)
         text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
+        annots = matcher.annot_text(text=text)
         brat_document = BratDocument()
         brat_document.add_annots(
             annots=annots, text=text, keyword_attr="brat_type"
@@ -479,11 +486,10 @@ class BratDocTest(unittest.TestCase):
         from iamsystem import Matcher
         from iamsystem import Term
 
-        matcher = Matcher()
         term1 = Term(label="North America", code="NA")
-        matcher.add_keywords(keywords=[term1])
+        matcher = Matcher.build(keywords=[term1], w=3)
         text = "North and South America"
-        annots = matcher.annot_text(text=text, w=3)
+        annots = matcher.annot_text(text=text)
         doc = BratDocument()
         doc.add_annots(annots, text=text, brat_type="CONTINENT")
         temp_path = tempfile.mkdtemp()
@@ -507,29 +513,21 @@ class FuzzyDocTest(unittest.TestCase):
     def test_abbreviations(self):
         """Abbreviations without customization."""
         # start_test_abbreviations
-        from iamsystem import Abbreviations
         from iamsystem import Matcher
         from iamsystem import Term
-        from iamsystem import english_tokenizer
 
-        tokenizer = english_tokenizer()
-        abbs = Abbreviations(name="abbs")
-        abbs.add(short_form="Pt", long_form="patient", tokenizer=tokenizer)
-        abbs.add(
-            short_form="PT", long_form="physiotherapy", tokenizer=tokenizer
-        )
-        abbs.add(
-            short_form="ARD",
-            long_form="Acute Respiratory Distress",
-            tokenizer=tokenizer,
-        )
-        matcher = Matcher(tokenizer=tokenizer)
         term1 = Term(label="acute respiratory distress", code="J80")
         term2 = Term(label="patient", code="D007290")
         term3 = Term(label="patient hospitalized", code="D007297")
         term4 = Term(label="physiotherapy", code="D007297")
-        matcher.add_keywords(keywords=[term1, term2, term3, term4])
-        matcher.add_fuzzy_algo(fuzzy_algo=abbs)
+        matcher = Matcher.build(
+            keywords=[term1, term2, term3, term4],
+            abbreviations=[
+                ("Pt", "patient"),
+                ("PT", "physiotherapy"),
+                ("ARD", "Acute Respiratory Distress"),
+            ],
+        )
         annots = matcher.annot_text(
             text="Pt hospitalized with ARD. Treament: PT"
         )
@@ -560,6 +558,14 @@ class FuzzyDocTest(unittest.TestCase):
             return token.label[0].isupper() and not token.label.isupper()
 
         tokenizer = english_tokenizer()
+        term1 = Term(label="acute respiratory distress", code="J80")
+        term2 = Term(label="patient", code="D007290")
+        term3 = Term(label="patient hospitalized", code="D007297")
+        term4 = Term(label="physiotherapy", code="D007297")
+        matcher = Matcher.build(
+            keywords=[term1, term2, term3, term4], tokenizer=tokenizer
+        )
+
         abbs_upper = Abbreviations(
             name="upper case abbs", token_is_an_abbreviation=upper_case_only
         )
@@ -578,12 +584,6 @@ class FuzzyDocTest(unittest.TestCase):
         abbs_capitalized.add(
             short_form="Pt", long_form="patient", tokenizer=tokenizer
         )
-        matcher = Matcher(tokenizer=tokenizer)
-        term1 = Term(label="acute respiratory distress", code="J80")
-        term2 = Term(label="patient", code="D007290")
-        term3 = Term(label="patient hospitalized", code="D007297")
-        term4 = Term(label="physiotherapy", code="D007297")
-        matcher.add_keywords(keywords=[term1, term2, term3, term4])
         matcher.add_fuzzy_algo(fuzzy_algo=abbs_upper)
         matcher.add_fuzzy_algo(fuzzy_algo=abbs_capitalized)
         annots = matcher.annot_text(
@@ -602,19 +602,20 @@ class FuzzyDocTest(unittest.TestCase):
         # start_test_spellwise
         from iamsystem import ESpellWiseAlgo
         from iamsystem import Matcher
-        from iamsystem import SpellWiseWrapper
         from iamsystem import Term
 
-        levenshtein = SpellWiseWrapper(
-            ESpellWiseAlgo.LEVENSHTEIN, max_distance=1, min_nb_char=5
-        )
-        soundex = SpellWiseWrapper(ESpellWiseAlgo.SOUNDEX, max_distance=1)
         term1 = Term(label="acute respiratory distress", code="J80")
-        matcher = Matcher()
-        matcher.add_keywords(keywords=[term1])
-        for algo in [levenshtein, soundex]:
-            algo.add_words(words=matcher.get_keywords_unigrams())
-            matcher.add_fuzzy_algo(algo)
+        matcher = Matcher.build(
+            keywords=[term1],
+            spellwise=[
+                dict(
+                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    max_distance=1,
+                    min_nb_char=5,
+                ),
+                dict(algo=ESpellWiseAlgo.SOUNDEX, max_distance=1),
+            ],
+        )
         annots = matcher.annot_text(text="acute resiratory distresssss")
         for annot in annots:
             print(annot.to_string(debug=True))
@@ -622,23 +623,56 @@ class FuzzyDocTest(unittest.TestCase):
         # end_test_spellwise
         self.assertEqual(1, len(annots))
 
+    def test_string_distance_ignored_w(self):
+        """Spellwise library examples."""
+        # start_test_string_distance_ignored_w
+        from iamsystem import ESpellWiseAlgo
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(
+            keywords=["poids"],
+            spellwise=[
+                dict(
+                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    max_distance=1,
+                    min_nb_char=4,
+                )
+            ],
+        )
+        annots = matcher.annot_text(text="Absence de poils.")
+        for annot in annots:
+            print(annot)
+        matcher = Matcher.build(
+            keywords=["poids"],
+            spellwise=[
+                dict(
+                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    max_distance=1,
+                    min_nb_char=4,
+                )
+            ],
+            string_distance_ignored_w=["poils"],
+        )
+        # poils	11 16	poids
+        annots_2 = matcher.annot_text(text="Absence de poils.")
+        for annot in annots_2:
+            print(annot)  # 0
+        # end_test_string_distance_ignored_w
+        self.assertEqual(1, len(annots))
+        self.assertEqual(0, len(annots_2))
+
     def test_simstring(self):
         """Simstring example."""
         # start_test_simstring
         from iamsystem import Matcher
         from iamsystem import Term
         from iamsystem.fuzzy.simstring import ESimStringMeasure
-        from iamsystem.fuzzy.simstring import SimStringWrapper
 
         term1 = Term(label="acute respiratory distress", code="J80")
-        matcher = Matcher()
-        matcher.add_keywords(keywords=[term1])
-        fuzzy_ss = SimStringWrapper(
-            words=matcher.get_keywords_unigrams(),
-            measure=ESimStringMeasure.COSINE,
-            threshold=0.7,
+        matcher = Matcher.build(
+            keywords=[term1],
+            simstring=[dict(measure=ESimStringMeasure.COSINE, threshold=0.7)],
         )
-        matcher.add_fuzzy_algo(fuzzy_algo=fuzzy_ss)
         annots = matcher.annot_text(text="acute respiratori disstress")
         for annot in annots:
             print(annot)
@@ -656,15 +690,15 @@ class FuzzyDocTest(unittest.TestCase):
         from iamsystem import SpellWiseWrapper
         from iamsystem import Term
 
-        matcher = Matcher()
+        term1 = Term(label="acute respiratory distress", code="J80")
+        matcher = Matcher.build(keywords=[term1])
         abbs = Abbreviations(name="abbs")
         abbs.add(short_form="a", long_form="acute", tokenizer=matcher)
-        levenshtein = SpellWiseWrapper(
-            ESpellWiseAlgo.LEVENSHTEIN, max_distance=1, min_nb_char=5
+        test = dict(
+            algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1, min_nb_char=5
         )
+        levenshtein = SpellWiseWrapper(**test)
         soundex = SpellWiseWrapper(ESpellWiseAlgo.SOUNDEX, max_distance=1)
-        term1 = Term(label="acute respiratory distress", code="J80")
-        matcher.add_keywords(keywords=[term1])
         cache = CacheFuzzyAlgos()
         for algo in [levenshtein, soundex]:
             algo.add_words(words=matcher.get_keywords_unigrams())
@@ -682,25 +716,26 @@ class FuzzyDocTest(unittest.TestCase):
     def test_fuzzy_regex(self):
         """FuzzyRegex example."""
         # start_test_fuzzy_regex
-        from iamsystem import FuzzyRegex
         from iamsystem import Matcher
         from iamsystem import english_tokenizer
         from iamsystem import split_find_iter_closure
 
-        fuzzy = FuzzyRegex(
-            algo_name="regex_num",
-            pattern=r"^\d*[.,]?\d*$",
-            pattern_name="numval",
-        )
-        split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
         tokenizer = english_tokenizer()
-        tokenizer.split = split
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_labels(labels=["calcium numval mmol/L"])
-        matcher.add_stopwords(words=["level", "is", "normal"])
-        matcher.add_fuzzy_algo(fuzzy_algo=fuzzy)
+        tokenizer.split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
+        matcher = Matcher.build(
+            keywords=["calcium numval mmol/L"],
+            tokenizer=tokenizer,
+            stopwords=["level", "is", "normal"],
+            fuzzy_regex=[
+                dict(
+                    name="regex_num",
+                    pattern=r"^\d*[.,]?\d*$",
+                    pattern_name="numval",
+                )
+            ],
+        )
         annots = matcher.annot_text(
-            text="the blood calcium level is normal: 2.1 mmol/L", w=1
+            text="the blood calcium level is normal: 2.1 mmol/L"
         )
         for annot in annots:
             print(annot)
@@ -711,37 +746,26 @@ class FuzzyDocTest(unittest.TestCase):
     def test_fuzzy_regex_negative_stopwords(self):
         """combine NegativeStopwords with FuzzyRegex."""
         # start_test_fuzzy_regex_negative_stopwords
-        from iamsystem import FuzzyRegex
-        from iamsystem import Keyword
         from iamsystem import Matcher
-        from iamsystem import NegativeStopwords
-        from iamsystem import NoStopwords
-        from iamsystem import Terminology
         from iamsystem import english_tokenizer
         from iamsystem import split_find_iter_closure
 
-        fuzzy = FuzzyRegex(
-            algo_name="regex_num",
-            pattern=r"^\d*[.,]?\d*$",
-            pattern_name="numval",
-        )
-        split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
         tokenizer = english_tokenizer()
-        tokenizer.split = split
-        keyword = Keyword(label="calcium numval mmol/L")
-        termino = Terminology()
-        termino.add_keywords(keywords=[keyword])
-        stopwords = NegativeStopwords(
-            words_to_keep=termino.get_unigrams(
-                tokenizer=tokenizer, stopwords=NoStopwords()
-            )
+        tokenizer.split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
+        matcher = Matcher.build(
+            keywords=["calcium numval mmol/L"],
+            tokenizer=tokenizer,
+            negative=True,
+            fuzzy_regex=[
+                dict(
+                    name="regex_num",
+                    pattern=r"^\d*[.,]?\d*$",
+                    pattern_name="numval",
+                )
+            ],
         )
-        stopwords.add_fun_is_a_word_to_keep(fuzzy.token_matches_pattern)
-        matcher = Matcher(tokenizer=tokenizer, stopwords=stopwords)
-        matcher.add_keywords(keywords=termino)
-        matcher.add_fuzzy_algo(fuzzy_algo=fuzzy)
         annots = matcher.annot_text(
-            text="the blood calcium level is normal: 2.1 mmol/L", w=1
+            text="the blood calcium level is normal: 2.1 mmol/L"
         )
         for annot in annots:
             print(annot)
@@ -756,20 +780,16 @@ class FuzzyDocTest(unittest.TestCase):
 
         from iamsystem import Matcher
         from iamsystem import Term
-        from iamsystem import WordNormalizer
         from iamsystem import french_tokenizer
 
-        tokenizer = french_tokenizer()
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_stopwords(words=["de", "la"])
-        stemmer = FrenchStemmer()
-        fuzzy_stemmer = WordNormalizer(
-            name="french_stemmer", norm_fun=stemmer.stem
-        )
         term1 = Term(label="cancer de la prostate", code="C61")
-        matcher.add_keywords(keywords=[term1])
-        fuzzy_stemmer.add_words(words=matcher.get_keywords_unigrams())
-        matcher.add_fuzzy_algo(fuzzy_stemmer)
+        stemmer = FrenchStemmer()
+        matcher = Matcher.build(
+            keywords=[term1],
+            tokenizer=french_tokenizer(),
+            stopwords=["de", "la"],
+            normalizers=[dict(name="french_stemmer", norm_fun=stemmer.stem)],
+        )
         annots = matcher.annot_text(text="cancer prostatique")
         for annot in annots:
             print(annot)

@@ -80,19 +80,19 @@ class BaseCustomComp(ABC):
     def process(self, doc) -> List[Span]:
         """Annotate a document. Call IAMsystem algorithm."""
         tokens = self.matcher.tokenize(text=doc)
-        annots: List[
-            Annotation[TokenSpacyAdapter]
-        ] = self.matcher.annot_tokens(tokens=tokens, w=self.w)
+        anns: List[Annotation[TokenSpacyAdapter]] = self.matcher.annot_tokens(
+            tokens=tokens
+        )
         if self.remove_nested_annots:
-            annots = rm_nested_annots(annots)
+            anns = rm_nested_annots(anns)
         spacy_spans = []
-        for annot in annots:
-            start_i = annot.tokens[0].spacy_token.i
-            end_i = annot.tokens[-1].spacy_token.i
-            kbids = [keyword.get_kb_id() for keyword in annot.keywords]
+        for ann in anns:
+            start_i = ann.tokens[0].spacy_token.i
+            end_i = ann.tokens[-1].spacy_token.i
+            kbids = [keyword.get_kb_id() for keyword in ann.keywords]
             kbids = ";".join(kbids)
             span = Span(doc=doc, start=start_i, end=end_i, label=kbids)
-            span._.set(self.attr, annot)
+            span._.set(self.attr, ann)
             spacy_spans.append(span)
         return spacy_spans
 
@@ -146,6 +146,7 @@ class IAMsystemSpacy(BaseCustomComp):
         )
         self._matcher = Matcher(tokenizer=tokenizer, stopwords=stopwords)
         self._matcher.remove_nested_annots = remove_nested_annots
+        self._matcher.w = w
         for algo in fuzzy_algos:
             self._matcher.add_fuzzy_algo(fuzzy_algo=algo)
         self._matcher.add_keywords(keywords=keywords)

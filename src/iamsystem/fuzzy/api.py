@@ -186,7 +186,7 @@ class StringDistance(NormLabelAlgo, ABC):
         """
         super().__init__(name)
         self._min_nb_char = min_nb_char
-
+        self._tokens2ignore: IWords2ignore
         if words2ignore is None:
             self._tokens2ignore = SimpleWords2ignore()
         else:

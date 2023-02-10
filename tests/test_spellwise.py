@@ -1,10 +1,10 @@
 import unittest
 
-from iamsystem import Matcher
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.spellwise import SpellWiseWrapper
 from iamsystem.fuzzy.util import SimpleWords2ignore
+from iamsystem.matcher.matcher import Matcher
 from iamsystem.stopwords.simple import Stopwords
 from iamsystem.tokenization.tokenize import french_tokenizer
 from tests.utils import get_termino_ivg
@@ -67,6 +67,21 @@ class SpellWiseTest(unittest.TestCase):
         self.assertTrue(tuple(["word"]) in syns)
 
     def test_words_to_ignore(self):
+        """If a word is ignored then the algorithm returns nothing."""
+        words2ignore = SimpleWords2ignore(words=["north"])
+        leven: SpellWiseWrapper = SpellWiseWrapper(
+            ESpellWiseAlgo.LEVENSHTEIN,
+            max_distance=1,
+            words2ignore=words2ignore,
+        )
+        leven.add_words(words=["north"])
+        self.assertTrue(leven._is_a_word_to_ignore("north"))
+        syns = leven.get_syns_of_word("north")
+        self.assertIs(syns, FuzzyAlgo.NO_SYN)
+        syns = list(leven.get_syns_of_word("nouth"))
+        self.assertEqual(1, len(syns))
+
+    def test_add_words_to_ignore(self):
         """If a word is ignored then the algorithm returns nothing.
         Deprecated method, words_to_ignore must be passed in init.
         """
@@ -109,7 +124,7 @@ class SimpleWord2ignoreTest(unittest.TestCase):
         )
         leven.add_words(words=matcher.get_keywords_unigrams())
         matcher.add_fuzzy_algo(leven)
-        annots = matcher.annot_text(text="une couche", w=1)
+        annots = matcher.annot_text(text="une couche")
         self.assertEqual(1, len(annots))
 
     def test_with_words_2_ignore(self):
@@ -123,7 +138,7 @@ class SimpleWord2ignoreTest(unittest.TestCase):
         )
         leven.add_words(words=matcher.get_keywords_unigrams())
         matcher.add_fuzzy_algo(leven)
-        annots = matcher.annot_text(text="une couche", w=1)
+        annots = matcher.annot_text(text="une couche")
         self.assertEqual(0, len(annots))
 
 

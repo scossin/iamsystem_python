@@ -39,7 +39,7 @@ class Annotation(Span[TokenT]):
     def get_tokens_algos(self) -> Iterable[Tuple[TokenT, List[str]]]:
         """Get each token and the list of fuzzy algorithms that matched it.
 
-        :return: an iterator of tuples (token0, ['algo1',...]) where token0 is
+        :return: an itera  of tuples (token0, ['algo1',...]) where token0 is
             a token and ['algo1',...] a list of fuzzy algorithms.
         """
         return zip(self._tokens, self.algos)

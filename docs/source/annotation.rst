@@ -22,7 +22,6 @@ For example:
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 18,19,20
     :start-after: # start_test_annotation_format
     :end-before: # end_test_annotation_format
 
@@ -63,14 +62,13 @@ Full overlapping
 Definition: let a1 and a2 two annotations. If a1.start <= a2.start and a1.end > a2.end
 then we say that a1 **fully overlaps** a2.
 Furthermore, if a1 has all the tokens of a2 then a2 is called a **nested annotation**.
-By default, the :ref:`matcher:Matcher` removes nested annotation.
+By default, the matcher removes nested annotation.
 For example:
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 6,11
     :start-after: # start_test_annotation_overlapping_ancestors
     :end-before: # end_test_annotation_overlapping_ancestors
 
@@ -96,7 +94,7 @@ This function allows to remove nested annotations but to keep ancestors.
 Removing or keeping ancestors depends on your use case.
 In a semantic annotation task, only the longest terms must be kept
 so the ancestors need to be removed.
-In an information retrieval task, ancestors should be kept.
+In an information retrieval task, ancestors could be kept in the index.
 
 Partial overlapping
 """"""""""""""""

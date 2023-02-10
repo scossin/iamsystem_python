@@ -13,11 +13,12 @@ from iamsystem.stopwords.api import IStopwords
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import ITokenizer
 from iamsystem.tokenization.tokenize import remove_stopwords
+from iamsystem.tree.api import IInitialState
 from iamsystem.tree.nodes import Node
 from iamsystem.tree.nodes import _create_a_root_node
 
 
-class Trie:
+class Trie(IInitialState):
     """A trie datastructure to store keywords."""
 
     def __init__(self):

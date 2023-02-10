@@ -5,7 +5,7 @@ Introduction
 ^^^^^^^^^^^^
 
 iamsystem algorithm tries to match a sequence of tokens in a document to a sequence of tokens in a keyword.
-The default fuzzy algorithm of the :ref:`matcher:Matcher` class is the exact match algorithm.
+The default fuzzy algorithm of the :ref:`api_doc:Matcher` class is the exact match algorithm.
 In general, in entity linking tasks, exact matching has high precision but low recall since a single
 character difference in a token can lead to a miss.
 
@@ -34,7 +34,6 @@ If your keywords contain **regular expressions**, the :ref:`fuzzy:FuzzyRegex` cl
 Remember that for each token in the document, all fuzzy algorithms added to the :ref:`matcher:Matcher`
 will be called, so the more algorithms you add, the slower iamsystem.
 However, algorithms that are context independant can be cached to avoid calling them multiple times.
-See :ref:`fuzzy:CacheFuzzyAlgos`.
 
 Abbreviations
 ^^^^^^^^^^^^^
@@ -45,7 +44,6 @@ to the matcher.
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 7,8,9
     :start-after: # start_test_abbreviations
     :end-before: # end_test_abbreviations
 
@@ -53,22 +51,17 @@ Note the following:
 
 - The first word "Pt" is associated with a single annotation.
 
-Since "hospitalized" comes after the abbreviation and since the matcher removes nested keywords
+Since "hospitalized" comes after the abbreviation and since the matcher removes nested annotation
 by default (See :ref:`annotation:Full overlapping`), the ambiguity is removed.
 
 - The last word "PT" has two annotations
 
 The :ref:`api_doc:Abbreviations` is context independent and cannot resolve the ambiguity here.
-To solve this problem, the annotations could be post-processed to identify the correct long form.
-A second solution would be to create a custom :ref:`api_doc:FuzzyAlgo` instance which
-would be context dependent and which would return the most likely long.
-
+To solve this problem, the annotations need to be post-processed (rules, language models...) to identify the most likely long form.
 
 In the case where two abbreviations have different string cases
 (Pt stands only for patient and PT for physiotherapy), the :ref:`api_doc:Abbreviations` class
 can be configured to be case sensitive.
-
-
 The :ref:`api_doc:Abbreviations` class can be configured with a method that
 checks if the document's token is an abbreviation or not:
 
@@ -76,7 +69,6 @@ checks if the document's token is an abbreviation or not:
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 16,27
     :start-after: # start_test_uppercase
     :end-before: # end_test_uppercase
 
@@ -103,27 +95,40 @@ and Soundex which is a phonetic algorithm.
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 6-9
     :start-after: # start_test_spellwise
     :end-before: # end_test_spellwise
 
-The *get_unigrams* function retrieve all the single words (excluding stopwords) form the keywords.
-Spellwise algorithms need to get the keywords'words to return a suggestion.
+The *spellwise* parameter of the build function expects an iterable of dictionary.
+The key-value pairs of a dictionary are passed to the :ref:`api_doc:SpellWiseWrapper` init function.
+Since a string distance algorithm is context independent, the build function placed them in a :ref:`fuzzy:CacheFuzzyAlgos`
+to avoid calling them multiple times.
 For a list of available Spellwise algorithms, see :ref:`api_doc:ESpellWiseAlgo`.
-See also :ref:`api_doc:SpellWiseWrapper` for configuration.
 
-When the number of keywords is large, these algorithms can be slow.
-Since their output doesn't depend on the context,
-I recommend using the :ref:`fuzzy:CacheFuzzyAlgos` class to store them.
+String distance algorithms are often used to detect typos in a document.
+False positives are common since two words could have a short string distance.
+To avoid calling a string distance algorithm on common words of a language, you can set
+*string_distance_ignored_w* parameter:
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_string_distance_ignored_w
+    :end-before: # end_test_string_distance_ignored_w
+
+Since *poils* is one substitution from *poids*, the algorithm returns a false positive.
+By telling the algorithm to ignore common words French words like *poils*, the string distance algorithm
+is called only for unknown words.
 
 SimString
 """""""""
 .. _simstring: http://chokkan.org/software/simstring/
 
 The `pysimstring`_ library provides an API to the fast `simstring`_ algorithm implemented in C++.
-
-In the example below, all the unigrams of the keywords are indexed by simstring.
-Then, for each token in the document, simstring is called to return the closest matches.
+The *simstring* parameter of the build function expects an iterable of dictionary.
+The key-value pairs of a dictionary are passed to the :ref:`api_doc:SimStringWrapper` init function.
+Since a string distance algorithm is context independent, the build function placed them in a :ref:`fuzzy:CacheFuzzyAlgos`
+to avoid calling them multiple times.
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
@@ -152,6 +157,7 @@ their results.
 
 Note that although we could have put the Abbreviations instance in the cache, it's not necessary
 to do so since this algorithm is as fast as the cache.
+If you use the *build* function of the matcher, string distance algorithms are automatically cached.
 
 
 FuzzyRegex
@@ -161,16 +167,17 @@ Regular expressions are very useful and can be used with iamsystem.
 For example, if you want to detect blood test results in electronic health records,
 such as calcium levels in blood, you can have a regular expression in your
 keyword: *"calcium (^\d*[.,]?\d*$) mmol/L"*.
-The class :ref:`api_doc:FuzzyRegex` allows you to do this.
+The *fuzzy_regex* parameter expects an iterable of dictionary. Key-value pairs of the dictionary correspond to
+:ref:`api_doc:FuzzyRegex` init function parameters.
+
 The regular expression *(^\d*[.,]?\d*$)* is placed in the FuzzyRegex instance,
-with a patter name (ex: *numval*), and the pattern name is placed in your keyword
+with a patter name (ex: *numval*), and the pattern name is placed in the keyword
 (*"calcium numval mmol/L"*).
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 6,11,15
     :start-after: # start_test_fuzzy_regex
     :end-before: # end_test_fuzzy_regex
 
@@ -189,7 +196,6 @@ which ignores all unigrams that are not in the keywords:
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 6,11,15
     :start-after: # start_test_fuzzy_regex_negative_stopwords
     :end-before: # end_test_fuzzy_regex_negative_stopwords
 
@@ -212,7 +218,6 @@ The stemming function is given to the :ref:`api_doc:WordNormalizer` class:
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 12,13,14
     :start-after: # start_test_word_normalization
     :end-before: # end_test_word_normalization
 

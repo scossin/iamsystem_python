@@ -1,13 +1,12 @@
 
 Matcher
-------
-The simplest example is to search a list of keywords in a document.
-By default, the :ref:`api_doc:Matcher` performs exact match only.
-
-
+-------
+The simplest example is to search a list of words in a document.
+To do so, :ref:`api_doc:Matcher` is the main public API of this package.
+I recommend to use the :ref:`api_doc:Matcher build` method to simplify its construction:
 
 With a list of words (keywords)
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
@@ -16,8 +15,8 @@ With a list of words (keywords)
     :end-before: # end_test_exact_match_keywords
 
 The matcher outputs a list of :ref:`annotation:Annotation`.
-To add attributes, create a :ref:`api_doc:Keyword` subclass.
-The :ref:`api_doc:Term` class shown below associates a unique identifier to each label.
+By default, it performs exact match only.
+A limitation of passing words to the matcher is that no attributes are associated.
 
 With a list of terms
 ^^^^^^^^^^^^^^^^^^^^
@@ -30,6 +29,17 @@ The :ref:`api_doc:Term` has a *code* attribute to store an identifier.
     :start-after: # start_test_exact_match_terms
     :end-before: # end_test_exact_match_terms
 
+With a custom of keyword subclass
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you need to add other attributes to a keyword, you can create your own :ref:`api_doc:IKeyword` implementation.
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :start-after: # start_test_exact_match_custom_keyword
+    :end-before: # end_test_exact_match_custom_keyword
+
+Note you can add different keywords types.
 
 Context window (w)
 ^^^^^^^^^^^^^^^^^^
@@ -48,7 +58,6 @@ Another solution is to set *w=2* that lets the algorithm searches 2 words after 
     :language: python
     :dedent:
     :linenos:
-    :emphasize-lines: 6
     :start-after: # start_test_window
     :end-before: # end_test_window
 

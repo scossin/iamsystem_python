@@ -1,10 +1,9 @@
 """ Utility classes and methods for fuzzy algorithms."""
 from typing import Iterable
 from typing import Optional
-from typing import Protocol
 from typing import Set
 
-from typing_extensions import runtime_checkable
+from typing_extensions import runtime_checkable, Protocol
 
 
 @runtime_checkable

@@ -1,5 +1,4 @@
 """ Handle abbreviations. """
-from abc import ABC
 from collections import defaultdict
 from typing import Callable
 from typing import Dict
@@ -24,7 +23,7 @@ def token_is_upper_case(token: TokenT) -> bool:
     return token.label.isupper()
 
 
-class Abbreviations(ContextFreeAlgo[TokenT], INormLabelAlgo, ABC):
+class Abbreviations(ContextFreeAlgo[TokenT], INormLabelAlgo):
     """A :class:`~iamsystem.FuzzyAlgo` to handle abbreviations.
     This class doesn't take into account the context of a document to return
     a long form.

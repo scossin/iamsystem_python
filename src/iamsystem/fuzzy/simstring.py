@@ -30,8 +30,8 @@ class SimStringWrapper(StringDistance):
     def __init__(
         self,
         words=Iterable[str],
-        name: str = "simstring",
         measure=ESimStringMeasure.JACCARD,
+        name: str = None,
         threshold=0.5,
         min_nb_char=5,
         words2ignore: Optional[IWords2ignore] = None,
@@ -40,9 +40,8 @@ class SimStringWrapper(StringDistance):
 
         :param words: the words to index in the simstring database.
             An easy way to provide these words is to call
-            :py:meth:`~iamsystem.Matcher.get_keywords_unigrams` method after
-            you added your keywords to the matcher instance.
-        :param name: a name given to this algorithm. Default "simstring".
+            :py:meth:`~iamsystem.Matcher.get_keywords_unigrams`.
+        :param name: a name given to this algorithm. Default measure name.
         :param measure: a similarity measure selected from
             :class:`~iamsystem.fuzzy.simstring.ESimStringMeasure`.
             Default JACCARD.
@@ -52,6 +51,8 @@ class SimStringWrapper(StringDistance):
         :param words2ignore: words that must be ignored by the algorithm to
             avoid false positives, for example English vocabulary words.
         """
+        if name is None:
+            name = measure.name
         super().__init__(
             name=name, min_nb_char=min_nb_char, words2ignore=words2ignore
         )

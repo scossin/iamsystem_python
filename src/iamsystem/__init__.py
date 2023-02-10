@@ -41,6 +41,8 @@ __all__ = [
     "IWords2ignore",
     "SimpleWords2ignore",
     "StringDistance",
+    "SimStringWrapper",
+    "ESimStringMeasure",
 ]
 
 from iamsystem.brat.adapter import BratDocument
@@ -56,6 +58,8 @@ from iamsystem.fuzzy.api import StringDistance
 from iamsystem.fuzzy.cache import CacheFuzzyAlgos
 from iamsystem.fuzzy.norm_fun import WordNormalizer
 from iamsystem.fuzzy.regex import FuzzyRegex
+from iamsystem.fuzzy.simstring import ESimStringMeasure
+from iamsystem.fuzzy.simstring import SimStringWrapper
 from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.spellwise import SpellWiseWrapper
 from iamsystem.fuzzy.util import IWords2ignore
