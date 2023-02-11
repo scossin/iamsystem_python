@@ -118,9 +118,9 @@ class SimpleWord2ignoreTest(unittest.TestCase):
         """Test a false positive is detected: couche is one string distance
         away from mouche."""
         matcher = Matcher()
-        matcher.add_labels(labels=["mouche"])
+        matcher.add_keywords(keywords=["mouche"])
         leven: SpellWiseWrapper = SpellWiseWrapper(
-            algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1
+            measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1
         )
         leven.add_words(words=matcher.get_keywords_unigrams())
         matcher.add_fuzzy_algo(leven)
@@ -128,11 +128,13 @@ class SimpleWord2ignoreTest(unittest.TestCase):
         self.assertEqual(1, len(annots))
 
     def test_with_words_2_ignore(self):
+        """Test levenshtein algorithm doesn't return 'mouche' for word
+        'couche' when adding words2ignore."""
         matcher = Matcher()
-        matcher.add_labels(labels=["mouche"])
+        matcher.add_keywords(keywords=["mouche"])
         words2ignore = SimpleWords2ignore(words=["couche"])
         leven: SpellWiseWrapper = SpellWiseWrapper(
-            algo=ESpellWiseAlgo.LEVENSHTEIN,
+            measure=ESpellWiseAlgo.LEVENSHTEIN,
             max_distance=1,
             words2ignore=words2ignore,
         )

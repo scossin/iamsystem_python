@@ -22,7 +22,9 @@ class MatcherDocTest(unittest.TestCase):
             keywords=["North America", "South America"],
             stopwords=["and"],
             abbreviations=[("amer", "America")],
-            spellwise=[dict(algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)],
+            spellwise=[
+                dict(measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)
+            ],
             w=2,
         )
         annots = matcher.annot_text(text="Northh and south Amer.")
@@ -609,11 +611,11 @@ class FuzzyDocTest(unittest.TestCase):
             keywords=[term1],
             spellwise=[
                 dict(
-                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    measure=ESpellWiseAlgo.LEVENSHTEIN,
                     max_distance=1,
                     min_nb_char=5,
                 ),
-                dict(algo=ESpellWiseAlgo.SOUNDEX, max_distance=1),
+                dict(measure=ESpellWiseAlgo.SOUNDEX, max_distance=1),
             ],
         )
         annots = matcher.annot_text(text="acute resiratory distresssss")
@@ -633,7 +635,7 @@ class FuzzyDocTest(unittest.TestCase):
             keywords=["poids"],
             spellwise=[
                 dict(
-                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    measure=ESpellWiseAlgo.LEVENSHTEIN,
                     max_distance=1,
                     min_nb_char=4,
                 )
@@ -646,7 +648,7 @@ class FuzzyDocTest(unittest.TestCase):
             keywords=["poids"],
             spellwise=[
                 dict(
-                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    measure=ESpellWiseAlgo.LEVENSHTEIN,
                     max_distance=1,
                     min_nb_char=4,
                 )
@@ -695,7 +697,7 @@ class FuzzyDocTest(unittest.TestCase):
         abbs = Abbreviations(name="abbs")
         abbs.add(short_form="a", long_form="acute", tokenizer=matcher)
         test = dict(
-            algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1, min_nb_char=5
+            measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1, min_nb_char=5
         )
         levenshtein = SpellWiseWrapper(**test)
         soundex = SpellWiseWrapper(ESpellWiseAlgo.SOUNDEX, max_distance=1)

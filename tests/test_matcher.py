@@ -68,11 +68,11 @@ class MatcherTest(unittest.TestCase):
 
     def test_add_labels(self):
         """This function add keywords that can be detected."""
-        detector = Matcher()
+        matcher = Matcher()
         words = ["acute respiratory distress syndrome", "diarrrhea"]
-        detector.add_labels(labels=words)
+        matcher.add_keywords(keywords=words)
         text = "Pt c/o acute respiratory distress syndrome and diarrrhea"
-        annots = detector.annot_text(text=text)
+        annots = matcher.annot_text(text=text)
         self.assertEqual(2, len(annots))
 
     def test_keywords_attribute(self):
@@ -153,7 +153,7 @@ class MatcherTest(unittest.TestCase):
         matcher = Matcher(tokenizer=tokenizer)
         tokens = matcher.tokenize(text)
         self.assertEqual("d", tokens[0].norm_label)
-        matcher.add_labels(labels=["insuffisance ventriculaire gauche"])
+        matcher.add_keywords(keywords=["insuffisance ventriculaire gauche"])
         matcher.w = 10
         annots = matcher.annot_text(text=text)
         self.assertEqual(1, len(annots))
@@ -323,7 +323,9 @@ class MatcherBuild(unittest.TestCase):
 
         matcher = Matcher.build(
             keywords=get_termino_ivg(),
-            spellwise=[dict(algo=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)],
+            spellwise=[
+                dict(measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)
+            ],
         )
         annots = matcher.annot_text(text=text)
         self.assertEqual(1, len(annots))
@@ -333,7 +335,9 @@ class MatcherBuild(unittest.TestCase):
         text = "insuffisance cardiaqu gauche"
         matcher = Matcher.build(
             keywords=get_termino_ivg(),
-            spellwise=[dict(max_distance=1, algo=ESpellWiseAlgo.LEVENSHTEIN)],
+            spellwise=[
+                dict(max_distance=1, measure=ESpellWiseAlgo.LEVENSHTEIN)
+            ],
         )
         annots = matcher.annot_text(text=text)
         self.assertEqual(1, len(annots))
@@ -344,7 +348,7 @@ class MatcherBuild(unittest.TestCase):
             Matcher.build(
                 keywords=get_termino_ivg(),
                 spellwise=[
-                    dict(max_distance=1, measure=ESpellWiseAlgo.LEVENSHTEIN)
+                    dict(max_distance=1, algo=ESpellWiseAlgo.LEVENSHTEIN)
                 ],
             )
 
@@ -359,7 +363,7 @@ class MatcherBuild(unittest.TestCase):
             spellwise=[
                 dict(
                     max_distance=1,
-                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    measure=ESpellWiseAlgo.LEVENSHTEIN,
                     words2ignore=words2ignore,
                 )
             ],
@@ -374,7 +378,7 @@ class MatcherBuild(unittest.TestCase):
             spellwise=[
                 dict(
                     max_distance=1,
-                    algo=ESpellWiseAlgo.LEVENSHTEIN,
+                    measure=ESpellWiseAlgo.LEVENSHTEIN,
                     # words2ignore=words2ignore
                 )
             ],

@@ -61,7 +61,7 @@ class SpellWiseWrapper(StringDistance):
 
     def __init__(
         self,
-        algo: ESpellWiseAlgo,
+        measure: ESpellWiseAlgo,
         max_distance: int,
         min_nb_char=5,
         words2ignore: Optional[IWords2ignore] = None,
@@ -69,7 +69,7 @@ class SpellWiseWrapper(StringDistance):
     ):
         """Create an instance to take advantage of a spellwise algorithm.
 
-        :param algo: A value from :class:`~iamsystem.SpellWiseAlgo`
+        :param measure: A value from :class:`~iamsystem.SpellWiseAlgo`
           enumerated list.
         :param max_distance: maximum edit distance
           (see spellwise documentation).
@@ -81,11 +81,11 @@ class SpellWiseWrapper(StringDistance):
           Default: spellwise algorithm's name.
         """
         if name is None:
-            name = algo.name
+            name = measure.name
         super().__init__(
             name=name, min_nb_char=min_nb_char, words2ignore=words2ignore
         )
-        self._suggester: ISpellWiseAlgo = algo.value()
+        self._suggester: ISpellWiseAlgo = measure.value()
         self._max_distance = max_distance
 
     @property

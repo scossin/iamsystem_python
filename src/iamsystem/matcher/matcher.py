@@ -191,15 +191,22 @@ class Matcher(IMatcher[TokenT]):
         """
         return self._tokenizer.tokenize(text=text)
 
-    def add_labels(self, labels: Iterable[str]) -> None:
-        """Utility function to call 'add_keywords' by providing a list of
-        labels, :class:`~iamsystem.IKeyword` instances are created and added.
+    def add_keywords(self, keywords: Iterable[Union[str, IKeyword]]) -> None:
+        """Utility function to add multiple keywords.
 
-        :param labels: the labels (keywords) to be searched in the document.
+        :param keywords: an iterable of string (labels) or
+            :class:`~iamsystem.IKeyword` to search in a document.
         :return: None.
         """
-        keywords = [Keyword(label=label) for label in labels]
-        self.add_keywords(keywords=keywords)
+        for kw in keywords:
+            if isinstance(kw, str):
+                kw = Keyword(label=kw)
+            if not isinstance(kw, IKeyword):
+                raise TypeError(
+                    f"{kw.__class__} is neither a string "
+                    f"or a class that implements the IKeyword interface."
+                )
+            self.add_keyword(keyword=kw)
 
     def add_keyword(self, keyword: IKeyword) -> None:
         """Add a keyword to find in a document.
@@ -213,15 +220,6 @@ class Matcher(IMatcher[TokenT]):
             tokenizer=self,
             stopwords=self,
         )
-
-    def add_keywords(self, keywords: Iterable[IKeyword]) -> None:
-        """Utility function to add multiple keywords.
-
-        :param keywords: :class:`~iamsystem.IKeyword` to search in a document.
-        :return: None.
-        """
-        for keyword in keywords:
-            self.add_keyword(keyword=keyword)
 
     @property
     def keywords(self) -> Collection[IKeyword]:
@@ -391,16 +389,7 @@ class Matcher(IMatcher[TokenT]):
         matcher.remove_nested_annots = remove_nested_annots
 
         # Add the keywords
-        for kw in keywords:
-            if isinstance(kw, str):
-                matcher.add_labels(labels=[kw])
-            elif isinstance(kw, IKeyword):
-                matcher.add_keyword(keyword=kw)
-            else:
-                raise ValueError(
-                    f"{kw.__class__} is neither a string "
-                    f"or a class that implements the IKeyword interface."
-                )
+        matcher.add_keywords(keywords=keywords)
 
         # add negative stopwords after stopwords and keywords are added
         # since this class needs keywords'unigrams without stopwords.

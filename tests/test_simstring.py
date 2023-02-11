@@ -9,7 +9,7 @@ from iamsystem.fuzzy.simstring import SimStringWrapper
 class MatcherTest(unittest.TestCase):
     def setUp(self) -> None:
         self.matcher = Matcher()
-        self.matcher.add_labels(labels=["paracetamol", "les"])
+        self.matcher.add_keywords(keywords=["paracetamol", "les"])
 
     def test_threshold_1(self):
         """Test threshold=1 is exact match"""

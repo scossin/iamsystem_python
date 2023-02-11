@@ -1,5 +1,7 @@
 __all__ = [
     "Matcher",
+    "IMatcher",
+    "IBaseMatcher",
     "Annotation",
     "rm_nested_annots",
     "IStopwords",
@@ -71,6 +73,8 @@ from iamsystem.keywords.keywords import Term
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import replace_annots
 from iamsystem.matcher.annotation import rm_nested_annots
+from iamsystem.matcher.api import IBaseMatcher
+from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.negative import NegativeStopwords

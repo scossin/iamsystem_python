@@ -17,7 +17,7 @@ class AnnotationTest(unittest.TestCase):
         """Since 'prostate cancer' overlaps 'cancer', 'cancer' is a nested
         annotation to remove. 'cancer' is right-most token."""
         matcher = Matcher()
-        matcher.add_labels(labels=["prostate cancer", "cancer"])
+        matcher.add_keywords(keywords=["prostate cancer", "cancer"])
         matcher.remove_nested_annots = False
         annots = matcher.annot_text(text="prostate cancer")
         self.assertEqual(2, len(annots))
@@ -51,7 +51,9 @@ class AnnotationTest(unittest.TestCase):
         Check it work with a middle term.
         """
         matcher = Matcher()
-        matcher.add_labels(labels=["prostate cancer undocumented", "cancer"])
+        matcher.add_keywords(
+            keywords=["prostate cancer undocumented", "cancer"]
+        )
         matcher.remove_nested_annots = False
         annots = matcher.annot_text(text="prostate cancer undocumented")
         self.assertEqual(2, len(annots))
