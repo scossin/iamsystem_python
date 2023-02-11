@@ -11,7 +11,6 @@ from iamsystem.brat.util import get_brat_format
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.brat.util import merge_offsets_and_get_brat_format
 from iamsystem.keywords.keywords import Keyword
-from iamsystem.keywords.keywords import Term
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.token import Offsets
@@ -114,15 +113,13 @@ class BraNoteTest(unittest.TestCase):
 
 
 @dataclass
-class Entity(Keyword):
+class MyEntity(Keyword):
     """A keyword that stores a brat_type to pass it to the connector."""
 
-    def __init__(self, label: str, brat_type: str):
-        super().__init__(label)
-        self.brat_type = brat_type
+    brat_type: str
 
     def __str__(self):
-        return f"{self.label}({self.brat_type})"
+        return f"{self.label} ({self.brat_type})"
 
 
 class BratDocumentTest(unittest.TestCase):
@@ -133,9 +130,9 @@ class BratDocumentTest(unittest.TestCase):
         self.brat_type = "Person"
 
         matcher = Matcher()
-        term1 = Term(label="North America", code="NA")
-        term2 = Term(label="South America", code="SA")
-        matcher.add_keywords(keywords=[term1, term2])
+        ent1 = MyEntity(label="North America", brat_type="NA")
+        ent2 = MyEntity(label="South America", brat_type="SA")
+        matcher.add_keywords(keywords=[ent1, ent2])
         matcher.w = 3
         self.text_america = "North and South America"
         self.annots = matcher.annot_text(text=self.text_america)
@@ -171,14 +168,15 @@ class BratDocumentTest(unittest.TestCase):
     def test_to_string_brat_document(self):
         """Brat document contains entities and notes string representation."""
         matcher = Matcher()
-        term1 = Term(label="North America", code="NA")
-        matcher.add_keywords(keywords=[term1])
+        ent1 = MyEntity(label="North America", brat_type="NA")
+        matcher.add_keywords(keywords=[ent1])
         matcher.w = 3
         annots = matcher.annot_text(text=self.text_america)
         brat_document = BratDocument()
         brat_document.add_annots(
             annots, text=self.text_america, brat_type="COUNTRY"
         )
+
         self.assertEqual(
             "T1\tCOUNTRY 0 5;16 23\tNorth America\n#1\tIAMSYSTEM T1\tNorth "
             "America (NA)",
@@ -207,8 +205,8 @@ class BratDocumentTest(unittest.TestCase):
         """The brat_type attribute of the Entity class
         is in the string representation."""
         matcher = Matcher()
-        entity1 = Entity(label="France", brat_type="COUNTRY")
-        entity2 = Entity(label="South America", brat_type="CONTINENT")
+        entity1 = MyEntity(label="France", brat_type="COUNTRY")
+        entity2 = MyEntity(label="South America", brat_type="CONTINENT")
         matcher.add_keywords(keywords=[entity1, entity2])
         text = "France and South America"
         annots = matcher.annot_text(text=text)

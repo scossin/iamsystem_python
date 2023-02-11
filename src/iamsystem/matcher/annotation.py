@@ -8,6 +8,7 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 
+from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.util import TransitionState
 from iamsystem.tokenization.api import TokenT
@@ -59,7 +60,11 @@ class Annotation(Span[TokenT]):
             "norm_label": self.norm_label,
             "tokens": [itoken_to_dict(token) for token in self.tokens],
             "algos": self.algos,
-            "kb_ids": [keyword.get_kb_id() for keyword in self.keywords],
+            "kb_ids": [
+                keyword.kb_id
+                for keyword in self.keywords
+                if isinstance(keyword, IEntity)
+            ],
             "kw_labels": [keyword.label for keyword in self.keywords],
         }
         if text is not None:

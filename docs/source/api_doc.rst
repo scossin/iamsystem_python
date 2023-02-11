@@ -47,7 +47,13 @@ IKeyword
    :undoc-members:
    :show-inheritance:
 
-   .. automethod:: __init__
+IEntity
+^^^^^^^^
+.. autoclass:: iamsystem.IEntity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 
 Keyword
@@ -59,9 +65,9 @@ Keyword
 
    .. automethod:: __init__
 
-Term
-^^^^^^^
-.. autoclass:: iamsystem.Term
+Entity
+^^^^^^
+.. autoclass:: iamsystem.Entity
    :members:
    :undoc-members:
    :show-inheritance:
@@ -69,7 +75,7 @@ Term
    .. automethod:: __init__
 
 Terminology
-^^^^^^^
+^^^^^^^^^^^
 .. autoclass:: iamsystem.Terminology
    :members:
    :show-inheritance:

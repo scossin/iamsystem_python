@@ -5,6 +5,7 @@ import tempfile
 from enum import Enum
 from typing import Iterable
 from typing import Optional
+from typing import Union
 
 from pysimstring import simstring
 
@@ -29,8 +30,8 @@ class SimStringWrapper(StringDistance):
 
     def __init__(
         self,
-        words=Iterable[str],
-        measure=ESimStringMeasure.JACCARD,
+        words: Iterable[str],
+        measure: Union[str, ESimStringMeasure] = ESimStringMeasure.JACCARD,
         name: str = None,
         threshold=0.5,
         min_nb_char=5,
@@ -42,7 +43,7 @@ class SimStringWrapper(StringDistance):
             An easy way to provide these words is to call
             :py:meth:`~iamsystem.Matcher.get_keywords_unigrams`.
         :param name: a name given to this algorithm. Default measure name.
-        :param measure: a similarity measure selected from
+        :param measure: a similarity measure string or selected from
             :class:`~iamsystem.fuzzy.simstring.ESimStringMeasure`.
             Default JACCARD.
         :param threshold: similarity measure threshold.
@@ -51,6 +52,13 @@ class SimStringWrapper(StringDistance):
         :param words2ignore: words that must be ignored by the algorithm to
             avoid false positives, for example English vocabulary words.
         """
+        # If an error occured during initialization, file is not opened
+        # the __del__ is called and return an error
+        # I add this attribute to check if the file was opened before trying
+        # to close it.
+        self.__file_is_open = False
+        if isinstance(measure, str):
+            measure = ESimStringMeasure[measure.upper()]
         if name is None:
             name = measure.name
         super().__init__(
@@ -63,6 +71,7 @@ class SimStringWrapper(StringDistance):
             for word in words:
                 ss_db.insert(word)
         self.ss_reader = simstring.reader(abs_path)
+        self.__file_is_open = True
         self.ss_reader.measure = getattr(simstring, measure.value)
         self.ss_reader.threshold = threshold
 
@@ -79,7 +88,8 @@ class SimStringWrapper(StringDistance):
         # call. However, it takes more time. It seems to be ok to close
         # the file here.
         # https://stackoverflow.com/questions/44142836/open-file-inside-class
-        self.ss_reader.close()
+        if self.__file_is_open:
+            self.ss_reader.close()
 
 
 class SimstringWriter:

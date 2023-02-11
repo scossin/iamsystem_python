@@ -15,16 +15,13 @@ def print(o) -> None:
 
 class MatcherDocTest(unittest.TestCase):
     def test_readme_example(self):
-        from iamsystem import ESpellWiseAlgo
         from iamsystem import Matcher
 
         matcher = Matcher.build(
             keywords=["North America", "South America"],
             stopwords=["and"],
             abbreviations=[("amer", "America")],
-            spellwise=[
-                dict(measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)
-            ],
+            spellwise=[dict(measure="Levenshtein", max_distance=1)],
             w=2,
         )
         annots = matcher.annot_text(text="Northh and south Amer.")
@@ -57,22 +54,22 @@ class MatcherDocTest(unittest.TestCase):
         )
         self.assertEqual("diarrrhea	47 56	diarrrhea", str(annots[1]))
 
-    def test_exact_match_terms(self):
+    def test_exact_match_ents(self):
         """Matcher with Term class."""
-        # start_test_exact_match_terms
+        # start_test_exact_match_ents
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
 
-        term1 = Term(label="acute respiratory distress syndrome", code="J80")
-        term2 = Term(label="diarrrhea", code="R19.7")
+        ent1 = Entity(label="acute respiratory distress syndrome", kb_id="J80")
+        ent2 = Entity(label="diarrrhea", kb_id="R19.7")
         text = "Pt c/o acute respiratory distress syndrome and diarrrhea"
-        matcher = Matcher.build(keywords=[term1, term2])
+        matcher = Matcher.build(keywords=[ent1, ent2])
         annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
         # acute respiratory distress syndrome	7 42	acute respiratory distress syndrome (J80) # noqa
         # diarrrhea (R19.7)	47	56
-        # end_test_exact_match_terms
+        # end_test_exact_match_ents
         self.assertEqual(
             "acute respiratory distress syndrome	7 42	acute respiratory "
             "distress syndrome (J80)",
@@ -83,37 +80,33 @@ class MatcherDocTest(unittest.TestCase):
     def test_exact_match_custom_keyword(self):
         """Matcher with Term class."""
         # start_test_exact_match_custom_keyword
-        from iamsystem import Keyword
+        from iamsystem import Entity
+        from iamsystem import IEntity
         from iamsystem import Matcher
-        from iamsystem import Term
 
-        class MyKeyword(Keyword):
+        class MyKeyword(IEntity):
             def __init__(
                 self, label: str, category: str, kb_name: str, uri: str
             ):
                 """label is the only mandatory attribute."""
-                super().__init__(label=label)
+                self.label = label
                 self.kb_name = kb_name
                 self.category = category
-                self.uri = uri
-
-            def get_kb_id(self):
-                """Called by annot.to_dict()"""
-                return self.uri
+                self.kb_id = uri
 
             def __str__(self):
                 """Called by print(annot)"""
-                return f"{self.uri}"
+                return f"{self.kb_id}"
 
-        term1 = MyKeyword(
+        ent1 = MyKeyword(
             label="acute respiratory distress syndrome",
             category="disease",
             kb_name="wikipedia",
             uri="https://www.wikidata.org/wiki/Q344873",
         )
-        term2 = Term(label="diarrrhea", code="R19.7")
+        ent2 = Entity(label="diarrrhea", kb_id="R19.7")
         text = "Pt c/o acute respiratory distress syndrome and diarrrhea"
-        matcher = Matcher.build(keywords=[term1, term2])
+        matcher = Matcher.build(keywords=[ent1, ent2])
         annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
@@ -194,16 +187,16 @@ class TokenizerDocTest(unittest.TestCase):
     def test_matcher_with_custom_tokenizer(self):
         """Matcher with a custom tokenizer."""
         # start_test_matcher_with_custom_tokenizer
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
         from iamsystem import english_tokenizer
         from iamsystem import split_find_iter_closure
 
-        term1 = Term(label="SARS-CoV+", code="95209-3")
+        ent1 = Entity(label="SARS-CoV+", kb_id="95209-3")
         text = "Pt c/o acute respiratory distress syndrome. RT-PCR sars-cov+"
         tokenizer = english_tokenizer()
         tokenizer.split = split_find_iter_closure(pattern=r"(\w+|\+)")
-        matcher = Matcher.build(keywords=[term1], tokenizer=tokenizer)
+        matcher = Matcher.build(keywords=[ent1], tokenizer=tokenizer)
         annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
@@ -240,13 +233,15 @@ class StopwordsTest(unittest.TestCase):
     def test_add_stopword(self):
         """Adding stopwords to have a match."""
         # start_test_add_stopword
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
         from iamsystem import english_tokenizer
 
-        term = Term(label="Essential hypertension, unspecified", code="I10.9")
+        ent = Entity(
+            label="Essential hypertension, unspecified", kb_id="I10.9"
+        )
         matcher = Matcher.build(
-            keywords=[term],
+            keywords=[ent],
             tokenizer=english_tokenizer(),
             stopwords=["unspecified"],
         )
@@ -281,12 +276,12 @@ class AnnotationDocTest(unittest.TestCase):
     def test_annotation_format(self):
         """String representation of annotation."""
         # start_test_annotation_format
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
 
-        term = Term(label="infectious disease", code="D007239")
+        ent = Entity(label="infectious disease", kb_id="D007239")
         matcher = Matcher.build(
-            keywords=[term], abbreviations=[("infect", "infectious")], w=2
+            keywords=[ent], abbreviations=[("infect", "infectious")], w=2
         )
         text = "Infect mononucleosis disease"
         annots = matcher.annot_text(text=text)
@@ -316,15 +311,17 @@ class AnnotationDocTest(unittest.TestCase):
     def test_annotation_multiple_keywords(self):
         """One annotation can have multiple keywords."""
         # start_test_annotation_multiple_keywords
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
         from iamsystem import english_tokenizer
 
-        term1 = Term(label="Infectious Disease", code="J80")
-        term2 = Term(label="infectious disease", code="C0042029")
-        term3 = Term(label="infectious disease, unspecified", code="C0042029")
+        ent1 = Entity(label="Infectious Disease", kb_id="J80")
+        ent2 = Entity(label="infectious disease", kb_id="C0042029")
+        ent3 = Entity(
+            label="infectious disease, unspecified", kb_id="C0042029"
+        )
         matcher = Matcher.build(
-            keywords=[term1, term2, term3],
+            keywords=[ent1, ent2, ent3],
             tokenizer=english_tokenizer(),
             stopwords=["unspecified"],
         )
@@ -407,9 +404,9 @@ class AnnotationDocTest(unittest.TestCase):
     # def test_replace_annots(self):
     #     from iamsystem import Matcher, Term, Annotation, replace_annots
     #     matcher = Matcher()
-    #     term1 = Term(label="North America", code="NA")
-    #     term2 = Term(label="South America", code="SA")
-    #     matcher.add_keywords(keywords=[term1, term2])
+    #     ent1 = Term(label="North America", code="NA")
+    #     ent2 = Term(label="South America", code="SA")
+    #     matcher.add_keywords(keywords=[ent1, ent2])
     #     text = "North and South America"
     #     annots = matcher.annot_text(text=text, w=3)
     #     new_labels = [annot.keywords[0].get_kb_id() for annot in annots]
@@ -424,11 +421,11 @@ class BratDocTest(unittest.TestCase):
         """Brat document example."""
         # start_test_brat_document
         from iamsystem import BratDocument
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
 
-        term1 = Term(label="North America", code="NA")
-        matcher = Matcher.build(keywords=[term1], w=3)
+        ent1 = Entity(label="North America", kb_id="NA")
+        matcher = Matcher.build(keywords=[ent1], w=3)
         text = "North and South America"
         annots = matcher.annot_text(text=text)
         brat_document = BratDocument()
@@ -449,9 +446,9 @@ class BratDocTest(unittest.TestCase):
         """Brat document example with a custom Keyword that stores
         brat_type."""
         # start_test_brat_doc_keyword
-        from iamsystem import Term
+        from iamsystem import Entity
 
-        class Entity(Term):
+        class Entity(Entity):
             def __init__(self, label: str, code: str, brat_type: str):
                 super().__init__(label, code)
                 self.brat_type = brat_type
@@ -459,8 +456,8 @@ class BratDocTest(unittest.TestCase):
         from iamsystem import BratDocument
         from iamsystem import Matcher
 
-        term1 = Entity(label="North America", code="NA", brat_type="CONTINENT")
-        matcher = Matcher.build(keywords=[term1], w=3)
+        ent1 = Entity(label="North America", code="NA", brat_type="CONTINENT")
+        matcher = Matcher.build(keywords=[ent1], w=3)
         text = "North and South America"
         annots = matcher.annot_text(text=text)
         brat_document = BratDocument()
@@ -485,11 +482,11 @@ class BratDocTest(unittest.TestCase):
 
         from iamsystem import BratDocument
         from iamsystem import BratWriter
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
 
-        term1 = Term(label="North America", code="NA")
-        matcher = Matcher.build(keywords=[term1], w=3)
+        ent1 = Entity(label="North America", kb_id="NA")
+        matcher = Matcher.build(keywords=[ent1], w=3)
         text = "North and South America"
         annots = matcher.annot_text(text=text)
         doc = BratDocument()
@@ -515,15 +512,15 @@ class FuzzyDocTest(unittest.TestCase):
     def test_abbreviations(self):
         """Abbreviations without customization."""
         # start_test_abbreviations
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
 
-        term1 = Term(label="acute respiratory distress", code="J80")
-        term2 = Term(label="patient", code="D007290")
-        term3 = Term(label="patient hospitalized", code="D007297")
-        term4 = Term(label="physiotherapy", code="D007297")
+        ent1 = Entity(label="acute respiratory distress", kb_id="J80")
+        ent2 = Entity(label="patient", kb_id="D007290")
+        ent3 = Entity(label="patient hospitalized", kb_id="D007297")
+        ent4 = Entity(label="physiotherapy", kb_id="D007297")
         matcher = Matcher.build(
-            keywords=[term1, term2, term3, term4],
+            keywords=[ent1, ent2, ent3, ent4],
             abbreviations=[
                 ("Pt", "patient"),
                 ("PT", "physiotherapy"),
@@ -546,8 +543,8 @@ class FuzzyDocTest(unittest.TestCase):
         """Abbreviations that check uppercase."""
         # start_test_uppercase
         from iamsystem import Abbreviations
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
         from iamsystem import TokenT
         from iamsystem import english_tokenizer
 
@@ -560,12 +557,12 @@ class FuzzyDocTest(unittest.TestCase):
             return token.label[0].isupper() and not token.label.isupper()
 
         tokenizer = english_tokenizer()
-        term1 = Term(label="acute respiratory distress", code="J80")
-        term2 = Term(label="patient", code="D007290")
-        term3 = Term(label="patient hospitalized", code="D007297")
-        term4 = Term(label="physiotherapy", code="D007297")
+        ent1 = Entity(label="acute respiratory distress", kb_id="J80")
+        ent2 = Entity(label="patient", kb_id="D007290")
+        ent3 = Entity(label="patient hospitalized", kb_id="D007297")
+        ent4 = Entity(label="physiotherapy", kb_id="D007297")
         matcher = Matcher.build(
-            keywords=[term1, term2, term3, term4], tokenizer=tokenizer
+            keywords=[ent1, ent2, ent3, ent4], tokenizer=tokenizer
         )
 
         abbs_upper = Abbreviations(
@@ -602,13 +599,13 @@ class FuzzyDocTest(unittest.TestCase):
     def test_spellwise(self):
         """Spellwise library examples."""
         # start_test_spellwise
+        from iamsystem import Entity
         from iamsystem import ESpellWiseAlgo
         from iamsystem import Matcher
-        from iamsystem import Term
 
-        term1 = Term(label="acute respiratory distress", code="J80")
+        ent1 = Entity(label="acute respiratory distress", kb_id="J80")
         matcher = Matcher.build(
-            keywords=[term1],
+            keywords=[ent1],
             spellwise=[
                 dict(
                     measure=ESpellWiseAlgo.LEVENSHTEIN,
@@ -666,13 +663,13 @@ class FuzzyDocTest(unittest.TestCase):
     def test_simstring(self):
         """Simstring example."""
         # start_test_simstring
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
         from iamsystem.fuzzy.simstring import ESimStringMeasure
 
-        term1 = Term(label="acute respiratory distress", code="J80")
+        ent1 = Entity(label="acute respiratory distress", kb_id="J80")
         matcher = Matcher.build(
-            keywords=[term1],
+            keywords=[ent1],
             simstring=[dict(measure=ESimStringMeasure.COSINE, threshold=0.7)],
         )
         annots = matcher.annot_text(text="acute respiratori disstress")
@@ -687,13 +684,13 @@ class FuzzyDocTest(unittest.TestCase):
         # start_test_cache_fuzzy_algos
         from iamsystem import Abbreviations
         from iamsystem import CacheFuzzyAlgos
+        from iamsystem import Entity
         from iamsystem import ESpellWiseAlgo
         from iamsystem import Matcher
         from iamsystem import SpellWiseWrapper
-        from iamsystem import Term
 
-        term1 = Term(label="acute respiratory distress", code="J80")
-        matcher = Matcher.build(keywords=[term1])
+        ent1 = Entity(label="acute respiratory distress", kb_id="J80")
+        matcher = Matcher.build(keywords=[ent1])
         abbs = Abbreviations(name="abbs")
         abbs.add(short_form="a", long_form="acute", tokenizer=matcher)
         test = dict(
@@ -780,14 +777,14 @@ class FuzzyDocTest(unittest.TestCase):
         # start_test_word_normalization
         from nltk.stem.snowball import FrenchStemmer
 
+        from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import Term
         from iamsystem import french_tokenizer
 
-        term1 = Term(label="cancer de la prostate", code="C61")
+        ent1 = Entity(label="cancer de la prostate", kb_id="C61")
         stemmer = FrenchStemmer()
         matcher = Matcher.build(
-            keywords=[term1],
+            keywords=[ent1],
             tokenizer=french_tokenizer(),
             stopwords=["de", "la"],
             normalizers=[dict(name="french_stemmer", norm_fun=stemmer.stem)],
@@ -812,23 +809,23 @@ class SpacyDocTest(unittest.TestCase):
         from spacy.lang.fr import French
 
         from iamsystem import Abbreviations
+        from iamsystem import Entity
         from iamsystem import FuzzyAlgo
         from iamsystem import IKeyword
         from iamsystem import IStopwords
-        from iamsystem import Term
         from iamsystem import Terminology
         from iamsystem import french_tokenizer
         from iamsystem.spacy import IAMsystemSpacy  # noqa
         from iamsystem.spacy import IsStopSpacy
         from iamsystem.spacy import TokenSpacyAdapter
 
-        @spacy.registry.misc("umls_terms.v1")
+        @spacy.registry.misc("umls_ents.v1")
         def get_termino_umls() -> Iterable[IKeyword]:
-            """An imaginary set of umls terms."""
+            """An imaginary set of umls ents."""
             termino = Terminology()
-            term1 = Term("Insuffisance Cardiaque", "I50.9")
-            term2 = Term("Insuffisance Cardiaque Gauche", "I50.1")
-            termino.add_keywords(keywords=[term1, term2])
+            ent1 = Entity("Insuffisance Cardiaque", "I50.9")
+            ent2 = Entity("Insuffisance Cardiaque Gauche", "I50.1")
+            termino.add_keywords(keywords=[ent1, ent2])
             return termino
 
         @spacy.registry.misc("fuzzy_algos_short_notes.v1")
@@ -858,7 +855,7 @@ class SpacyDocTest(unittest.TestCase):
             name="iamsystem",
             last=True,
             config={
-                "keywords": {"@misc": "umls_terms.v1"},
+                "keywords": {"@misc": "umls_ents.v1"},
                 "stopwords": {"@misc": "stopwords_spacy.v1"},
                 "fuzzy_algos": {"@misc": "fuzzy_algos_short_notes.v1"},
                 "w": 1,

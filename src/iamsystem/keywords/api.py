@@ -11,9 +11,12 @@ class IKeyword(Protocol):
 
     label: str
 
-    def get_kb_id(self):
-        """Get the knowledge base id of this keyword."""
-        raise NotImplementedError
+
+@runtime_checkable
+class IEntity(IKeyword, Protocol):
+    """An entity of a knowledge base."""
+
+    kb_id: str
 
 
 @runtime_checkable

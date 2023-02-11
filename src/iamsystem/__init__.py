@@ -9,7 +9,7 @@ __all__ = [
     "NoStopwords",
     "NegativeStopwords",
     "Keyword",
-    "Term",
+    "Entity",
     "Terminology",
     "Offsets",
     "Token",
@@ -36,6 +36,7 @@ __all__ = [
     "FuzzyAlgo",
     "IOffsets",
     "IKeyword",
+    "IEntity",
     "NormLabelAlgo",
     "ISpan",
     "IToken",
@@ -66,10 +67,11 @@ from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.spellwise import SpellWiseWrapper
 from iamsystem.fuzzy.util import IWords2ignore
 from iamsystem.fuzzy.util import SimpleWords2ignore
+from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.keywords.collection import Terminology
+from iamsystem.keywords.keywords import Entity
 from iamsystem.keywords.keywords import Keyword
-from iamsystem.keywords.keywords import Term
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import replace_annots
 from iamsystem.matcher.annotation import rm_nested_annots

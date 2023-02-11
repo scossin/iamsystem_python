@@ -10,8 +10,8 @@ from iamsystem.fuzzy.simstring import ESimStringMeasure
 from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.util import SimpleWords2ignore
 from iamsystem.keywords.collection import Terminology
+from iamsystem.keywords.keywords import Entity
 from iamsystem.keywords.keywords import Keyword
-from iamsystem.keywords.keywords import Term
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import replace_annots
 from iamsystem.matcher.matcher import Matcher
@@ -24,7 +24,7 @@ from iamsystem.tokenization.tokenize import split_find_iter_closure
 from iamsystem.tokenization.tokenize import tokenize_and_order_decorator
 from tests.utils import get_termino_ivg
 from tests.utils_detector import TermSubClass
-from tests.utils_detector import get_term_sub_class_ivg
+from tests.utils_detector import get_ent_sub_class_ivg
 
 
 class MatcherTest(unittest.TestCase):
@@ -35,7 +35,7 @@ class MatcherTest(unittest.TestCase):
         self.tokenizer.stopwords = self.stopwords
         self.matcher = Matcher(tokenizer=self.tokenizer)
         self.matcher.add_keywords(keywords=self.terminoIVG)
-        self.terminoSubClass = get_term_sub_class_ivg()
+        self.terminoSubClass = get_ent_sub_class_ivg()
         self.detectorSubClass = Matcher(tokenizer=self.tokenizer)
         self.detectorSubClass.add_keywords(keywords=self.terminoSubClass)
 
@@ -66,7 +66,7 @@ class MatcherTest(unittest.TestCase):
         )
         self.assertEqual(1, len(annots))
 
-    def test_add_labels(self):
+    def test_add_keywords(self):
         """This function add keywords that can be detected."""
         matcher = Matcher()
         words = ["acute respiratory distress syndrome", "diarrrhea"]
@@ -107,9 +107,9 @@ class MatcherTest(unittest.TestCase):
     def test_detect_with_last_span_is_stopword(self):
         """When a stopword follows a keyword,
         it's not part of the annotation."""
-        term = Term("serpents", "C0037382")
+        ent = Entity("serpents", "C0037382")
         termino = Terminology()
-        termino.add(term)
+        termino.add(ent)
         self.matcher = Matcher(tokenizer=self.tokenizer)
         self.matcher.add_keywords(keywords=termino)
         self.stopwords.add(words=["les"])
@@ -120,17 +120,17 @@ class MatcherTest(unittest.TestCase):
         annot = annots[0]
         self.assertEqual(annot.label, "serpents")
 
-    def test_detect_with_a_term_sub_class(self):
+    def test_detect_with_a_ent_sub_class(self):
         """Check no type error and attribute access of a Term subclass."""
         annots: List[Annotation] = self.detectorSubClass.annot_text(
             text="insuffisance cardiaque"
         )
         self.assertEqual(1, len(annots))
         self.assertTrue(isinstance(annots[0].keywords[0], TermSubClass))
-        term_sub_class: TermSubClass = typing.cast(
+        ent_sub_class: TermSubClass = typing.cast(
             TermSubClass, annots[0].keywords[0]
         )
-        self.assertEqual("ICD-10", term_sub_class.termino)
+        self.assertEqual("ICD-10", ent_sub_class.termino)
 
     def test_add_algo(self):
         """Create a fuzzy algorithm and add it, it must match anything."""
@@ -167,7 +167,7 @@ class MatcherTest(unittest.TestCase):
         """
         text = "insuffisance cardiaque gauche"
         annots: List[Annotation] = self.matcher.annot_text(text=text)
-        new_labels = [annot.keywords[0].get_kb_id() for annot in annots]
+        new_labels = [annot.keywords[0].kb_id for annot in annots]
         new_text = replace_annots(
             text=text, annots=annots, new_labels=new_labels
         )
@@ -196,8 +196,8 @@ class MatcherTest(unittest.TestCase):
     def test_keywords_iterator(self):
         matcher = Matcher()
         termino = Terminology()
-        term = Term(label="ulcères gastriques", code="K25")
-        termino.add(term)
+        ent = Entity(label="ulcères gastriques", kb_id="K25")
+        termino.add(ent)
         keyword_iter = iter(termino)
         matcher.add_keywords(keywords=keyword_iter)
         annots = matcher.annot_text(text="ulcères gastriques")

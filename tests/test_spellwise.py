@@ -34,6 +34,29 @@ class SpellWiseTest(unittest.TestCase):
         """Returns the Enum value by default."""
         self.assertEqual("LEVENSHTEIN", self.leven.name)
 
+    def test_init_measure_str(self):
+        """Check no error if passing the measure name."""
+        algo: SpellWiseWrapper = SpellWiseWrapper(
+            measure="LEVENSHTEIN", max_distance=1
+        )
+        algo.add_words(words=self.unigrams)
+        syns = self.leven.get_syns_of_word("insufisance")
+        self.assertTrue(self.tuple_ins in syns)
+
+    def test_init_measure_str_lower(self):
+        """Check no error if passing the measure name in lowercase."""
+        algo: SpellWiseWrapper = SpellWiseWrapper(
+            measure="Levenshtein", max_distance=1
+        )
+        algo.add_words(words=self.unigrams)
+        syns = self.leven.get_syns_of_word("insufisance")
+        self.assertTrue(self.tuple_ins in syns)
+
+    def test_init_measure_misspelled(self):
+        """Check error if misspelled."""
+        with (self.assertRaises(KeyError)):
+            SpellWiseWrapper(measure="Levenstein", max_distance=1)
+
     def test_levenshtein_get_synonyms(self):
         """a 'f' is missing in 'insuffisance'."""
         syns = self.leven.get_syns_of_word("insufisance")

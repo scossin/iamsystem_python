@@ -25,14 +25,13 @@ See the [documentation](https://iamsystem-python.readthedocs.io/en/latest/) for 
 ### Quick example
 
 ```python
-from iamsystem import ESpellWiseAlgo
 from iamsystem import Matcher
 
 matcher = Matcher.build(
     keywords=["North America", "South America"],
     stopwords=["and"],
     abbreviations=[("amer", "America")],
-    spellwise=[dict(measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)],
+    spellwise=[dict(measure="Levenshtein", max_distance=1)],
     w=2,
 )
 annots = matcher.annot_text(text="Northh and south Amer.")

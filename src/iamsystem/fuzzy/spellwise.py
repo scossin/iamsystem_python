@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 
 from spellwise import CaverphoneOne
 from spellwise import CaverphoneTwo
@@ -61,7 +62,7 @@ class SpellWiseWrapper(StringDistance):
 
     def __init__(
         self,
-        measure: ESpellWiseAlgo,
+        measure: Union[str, ESpellWiseAlgo],
         max_distance: int,
         min_nb_char=5,
         words2ignore: Optional[IWords2ignore] = None,
@@ -69,8 +70,8 @@ class SpellWiseWrapper(StringDistance):
     ):
         """Create an instance to take advantage of a spellwise algorithm.
 
-        :param measure: A value from :class:`~iamsystem.SpellWiseAlgo`
-          enumerated list.
+        :param measure: The measure string or a value selected
+            from :class:`~iamsystem.SpellWiseAlgo` enumerated list.
         :param max_distance: maximum edit distance
           (see spellwise documentation).
         :param min_nb_char: the minimum number of characters a word
@@ -80,6 +81,8 @@ class SpellWiseWrapper(StringDistance):
         :param name: a name given to this algorithm.
           Default: spellwise algorithm's name.
         """
+        if isinstance(measure, str):
+            measure = ESpellWiseAlgo[measure.upper()]
         if name is None:
             name = measure.name
         super().__init__(

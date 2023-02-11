@@ -10,7 +10,9 @@ In the Matcher class, this parameter becomes an attribute.
 - SpellWiseWrapper init: 'spellwise_algo' argument renamed 'measure' to be consistent with string distance algorithm.
 - SpellWiseWrapper *add_words_to_ignore* is deprecated, moved to the init function.
 - Fuzzyregex init: 'algo_name' argument renamed 'name'.
-
+- IKeyword: remove *get_kb_id* function, a keyword doesn't have a kb_id.
+An IEntity was created to store a kb_id attribute.
+- Term class is renamed 'Entity', code attribute is replace by 'kb_id'.
 
 ### Enhancement
 

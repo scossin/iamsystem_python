@@ -178,7 +178,8 @@ class Matcher(IMatcher[TokenT]):
             return self._stopwords.is_stopword(word=word)
         else:
             warnings.warn(
-                f"{self._stopwords.__class__} does not implement this method."
+                f"{self._stopwords.__class__.__name__} "
+                f"does not implement this method."
             )
             return False
 
@@ -191,7 +192,9 @@ class Matcher(IMatcher[TokenT]):
         """
         return self._tokenizer.tokenize(text=text)
 
-    def add_keywords(self, keywords: Iterable[Union[str, IKeyword]]) -> None:
+    def add_keywords(
+        self, keywords: Iterable[Union[str, IKeyword, Dict[Any]]]
+    ) -> None:
         """Utility function to add multiple keywords.
 
         :param keywords: an iterable of string (labels) or
@@ -201,11 +204,6 @@ class Matcher(IMatcher[TokenT]):
         for kw in keywords:
             if isinstance(kw, str):
                 kw = Keyword(label=kw)
-            if not isinstance(kw, IKeyword):
-                raise TypeError(
-                    f"{kw.__class__} is neither a string "
-                    f"or a class that implements the IKeyword interface."
-                )
             self.add_keyword(keyword=kw)
 
     def add_keyword(self, keyword: IKeyword) -> None:
@@ -247,7 +245,7 @@ class Matcher(IMatcher[TokenT]):
         else:
             warnings.warn(
                 f"Adding stopwords have no effect on class "
-                f"{self._stopwords.__class__}"
+                f"{self._stopwords.__class__.__name__}"
             )
 
     def add_fuzzy_algo(self, fuzzy_algo: FuzzyAlgo[TokenT]) -> None:

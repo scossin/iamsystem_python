@@ -18,16 +18,16 @@ The matcher outputs a list of :ref:`annotation:Annotation`.
 By default, it performs exact match only.
 A limitation of passing words to the matcher is that no attributes are associated.
 
-With a list of terms
-^^^^^^^^^^^^^^^^^^^^
+With a list of entities
+^^^^^^^^^^^^^^^^^^^^^^^
 Often, keywords are derived from a knowledge graph that associates a label with a unique identifier.
-The :ref:`api_doc:Term` has a *code* attribute to store an identifier.
+The :ref:`api_doc:Entity` has a *kb_id* attribute to store an identifier.
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
     :dedent:
-    :start-after: # start_test_exact_match_terms
-    :end-before: # end_test_exact_match_terms
+    :start-after: # start_test_exact_match_ents
+    :end-before: # end_test_exact_match_ents
 
 With a custom of keyword subclass
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

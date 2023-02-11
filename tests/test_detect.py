@@ -78,8 +78,8 @@ class DetectTest(unittest.TestCase):
         annots = self.detect_ivg(tokens=tokens, w=1)
         self.assertEqual(2, len(annots))
         self.assertEqual(1, len(annots[0].keywords))
-        self.assertEqual("I50.9", annots[0].keywords[0].code)
-        self.assertEqual("I50.1", annots[1].keywords[0].code)
+        self.assertEqual("I50.9", annots[0].keywords[0].kb_id)
+        self.assertEqual("I50.1", annots[1].keywords[0].kb_id)
 
     def test_rm_ancestors(self):
         """Calling this function remove 'insuffisance cardiaque'
@@ -148,7 +148,7 @@ class DetectTest(unittest.TestCase):
     def test_window_with_stopwords(self):
         """Since stopwords are ignored, words can be much closer with stopwords
         In this example, although 'cardiaque' is separated from 'insuffisance'
-        by 3 words, the term is detected with a window of 1.
+        by 3 words, the ent is detected with a window of 1.
         """
         text = "insuffisance de la fonction cardiaque"
         self.stopwords.add(words=["de", "la", "fonction"])
@@ -258,12 +258,12 @@ class DetectAmbiguityTest(unittest.TestCase):
         annots = self.detect_irc(tokens=tokens, w=1)
         self.assertEqual(2, len(annots))  # two long forms / keywords detected
         annots = rm_nested_annots(annots=annots, keep_ancestors=False)
-        self.assertEqual(2, len(annots))  # no term removed
+        self.assertEqual(2, len(annots))  # no ent removed
 
     def test_ambiguity_rm_nested_2(self):
         """An ambiguity can be removed thanks to the context: here the word
         'dialysee' follows 'IRC' so it gives context to remove the ambiguity
-        of the 'IRC' term.
+        of the 'IRC' ent.
         """
         self.matcher.add_fuzzy_algo(get_abbs_irc())
         text = "antécédent d'IRC dialysée"

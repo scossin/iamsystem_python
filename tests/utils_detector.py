@@ -2,7 +2,7 @@ from typing import Tuple
 
 from iamsystem.fuzzy.abbreviations import Abbreviations
 from iamsystem.keywords.collection import Terminology
-from iamsystem.keywords.keywords import Term
+from iamsystem.keywords.keywords import Entity
 from iamsystem.matcher.util import StartState
 from iamsystem.matcher.util import TransitionState
 from iamsystem.tokenization.token import Token
@@ -61,19 +61,19 @@ def get_gauche_el_in_ivg() -> Tuple[Node, TransitionState]:
     return gauche_node, gauche_el
 
 
-class TermSubClass(Term):
+class TermSubClass(Entity):
     """Add a termino attribute to a Term."""
 
-    def __init__(self, label, code, termino: str):
-        super().__init__(label, code)
+    def __init__(self, label, kb_id, termino: str):
+        super().__init__(label, kb_id)
         self.termino = termino
 
 
-def get_term_sub_class_ivg():
-    """Returns terms of a custom Term subclass."""
-    term1 = TermSubClass("Insuffisance Cardiaque", "I50.9", "ICD-10")
-    term2 = TermSubClass("Insuffisance Cardiaque Gauche", "I50.1", "ICD-10")
+def get_ent_sub_class_ivg():
+    """Returns ents of a custom Term subclass."""
+    ent1 = TermSubClass("Insuffisance Cardiaque", "I50.9", "ICD-10")
+    ent2 = TermSubClass("Insuffisance Cardiaque Gauche", "I50.1", "ICD-10")
     termino = Terminology()
-    termino.add(term1)
-    termino.add(term2)
+    termino.add(ent1)
+    termino.add(ent2)
     return termino
