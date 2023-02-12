@@ -1,5 +1,7 @@
 __all__ = [
     "Matcher",
+    "IMatcher",
+    "IBaseMatcher",
     "Annotation",
     "rm_nested_annots",
     "IStopwords",
@@ -7,7 +9,7 @@ __all__ = [
     "NoStopwords",
     "NegativeStopwords",
     "Keyword",
-    "Term",
+    "Entity",
     "Terminology",
     "Offsets",
     "Token",
@@ -34,10 +36,16 @@ __all__ = [
     "FuzzyAlgo",
     "IOffsets",
     "IKeyword",
+    "IEntity",
     "NormLabelAlgo",
     "ISpan",
     "IToken",
     "ITokenizer",
+    "IWords2ignore",
+    "SimpleWords2ignore",
+    "StringDistance",
+    "SimStringWrapper",
+    "ESimStringMeasure",
 ]
 
 from iamsystem.brat.adapter import BratDocument
@@ -49,18 +57,26 @@ from iamsystem.fuzzy.abbreviations import token_is_upper_case
 from iamsystem.fuzzy.api import ContextFreeAlgo
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.fuzzy.api import NormLabelAlgo
+from iamsystem.fuzzy.api import StringDistance
 from iamsystem.fuzzy.cache import CacheFuzzyAlgos
 from iamsystem.fuzzy.norm_fun import WordNormalizer
 from iamsystem.fuzzy.regex import FuzzyRegex
+from iamsystem.fuzzy.simstring import ESimStringMeasure
+from iamsystem.fuzzy.simstring import SimStringWrapper
 from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.spellwise import SpellWiseWrapper
+from iamsystem.fuzzy.util import IWords2ignore
+from iamsystem.fuzzy.util import SimpleWords2ignore
+from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.keywords.collection import Terminology
+from iamsystem.keywords.keywords import Entity
 from iamsystem.keywords.keywords import Keyword
-from iamsystem.keywords.keywords import Term
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import replace_annots
 from iamsystem.matcher.annotation import rm_nested_annots
+from iamsystem.matcher.api import IBaseMatcher
+from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.negative import NegativeStopwords

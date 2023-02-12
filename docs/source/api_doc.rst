@@ -8,10 +8,17 @@ Matcher
 
 .. autoclass:: iamsystem.Matcher
    :members:
-   :undoc-members:
+   :undoc-members: build
    :show-inheritance:
 
    .. automethod:: __init__
+
+Matcher build
+^^^^^^^^^^^^^
+
+.. autoclass:: iamsystem.Matcher
+   :members: build
+   :noindex:
 
 Annotation
 ----------
@@ -40,7 +47,13 @@ IKeyword
    :undoc-members:
    :show-inheritance:
 
-   .. automethod:: __init__
+IEntity
+^^^^^^^^
+.. autoclass:: iamsystem.IEntity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 
 Keyword
@@ -52,9 +65,9 @@ Keyword
 
    .. automethod:: __init__
 
-Term
-^^^^^^^
-.. autoclass:: iamsystem.Term
+Entity
+^^^^^^
+.. autoclass:: iamsystem.Entity
    :members:
    :undoc-members:
    :show-inheritance:
@@ -62,7 +75,7 @@ Term
    .. automethod:: __init__
 
 Terminology
-^^^^^^^
+^^^^^^^^^^^
 .. autoclass:: iamsystem.Terminology
    :members:
    :show-inheritance:
@@ -127,7 +140,6 @@ Build a custom split function
 Order tokens
 ^^^^^^^^^^^^
 .. autofunction:: iamsystem.tokenize_and_order_decorator
-
 
 
 Stopwords classes
@@ -238,7 +250,24 @@ ESpellWiseAlgo
    :undoc-members:
    :show-inheritance:
 
+SimString
+^^^^^^^^^
 
+SimStringWrapper
+""""""""""""""""
+.. autoclass:: iamsystem.SimStringWrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+   .. automethod:: __init__
+
+ESimStringMeasure
+"""""""""""""""""
+.. autoclass:: iamsystem.ESimStringMeasure
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Brat
 ----

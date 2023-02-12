@@ -2,9 +2,10 @@
 import warnings
 
 from enum import Enum
-from typing import Dict
 from typing import Iterable
 from typing import List
+from typing import Optional
+from typing import Union
 
 from spellwise import CaverphoneOne
 from spellwise import CaverphoneTwo
@@ -16,8 +17,9 @@ from typing_extensions import Protocol
 from typing_extensions import TypedDict
 
 from iamsystem.fuzzy.api import FuzzyAlgo
-from iamsystem.fuzzy.api import NormLabelAlgo
+from iamsystem.fuzzy.api import StringDistance
 from iamsystem.fuzzy.api import SynType
+from iamsystem.fuzzy.util import IWords2ignore
 
 
 class Suggestions(TypedDict):
@@ -54,36 +56,40 @@ class ISpellWiseAlgo(Protocol):
         pass
 
 
-class SpellWiseWrapper(NormLabelAlgo):
+class SpellWiseWrapper(StringDistance):
     """A :class:`~iamsystem.FuzzyAlgo` that wraps an algorithm from
     the spellwise library."""
 
     def __init__(
         self,
-        spellwise_algo: ESpellWiseAlgo,
+        measure: Union[str, ESpellWiseAlgo],
         max_distance: int,
-        min_nb_char: int = 5,
+        min_nb_char=5,
+        words2ignore: Optional[IWords2ignore] = None,
         name: str = None,
     ):
-        """Create an instance to leverage a spellwise algorithm.
+        """Create an instance to take advantage of a spellwise algorithm.
 
-        :param spellwise_algo: A value from :class:`~iamsystem.SpellWiseAlgo`
-          enumerated list.
+        :param measure: The measure string or a value selected
+            from :class:`~iamsystem.SpellWiseAlgo` enumerated list.
         :param max_distance: maximum edit distance
           (see spellwise documentation).
         :param min_nb_char: the minimum number of characters a word
-          must have not to be ignored.
+          must have in order not to be ignored.
+        :param words2ignore: words that must be ignored by the algorithm to
+            avoid false positives, for example English vocabulary words.
         :param name: a name given to this algorithm.
           Default: spellwise algorithm's name.
         """
-        algo_name = spellwise_algo.name
-        if name is not None:
-            algo_name = name
-        super().__init__(algo_name)
-        self._tokens2ignore: Dict[str, None] = {}
-        self._suggester: ISpellWiseAlgo = spellwise_algo.value()
+        if isinstance(measure, str):
+            measure = ESpellWiseAlgo[measure.upper()]
+        if name is None:
+            name = measure.name
+        super().__init__(
+            name=name, min_nb_char=min_nb_char, words2ignore=words2ignore
+        )
+        self._suggester: ISpellWiseAlgo = measure.value()
         self._max_distance = max_distance
-        self._min_nb_char = min_nb_char
 
     @property
     def max_distance(self):
@@ -94,17 +100,6 @@ class SpellWiseWrapper(NormLabelAlgo):
     def max_distance(self, value: int):
         """Set the maximum edit distance."""
         self._max_distance = value
-
-    @property
-    def min_nb_char(self):
-        """The minimum number of characters a word must have
-        not to be ignored."""
-        return self._min_nb_char
-
-    @min_nb_char.setter
-    def min_nb_char(self, value: int):
-        """Set the minimum number of characters a word must have."""
-        self._min_nb_char = value
 
     def add_words(self, words: Iterable[str], warn=False) -> None:
         """A list of possible word synonyms, in general all the tokens
@@ -119,7 +114,7 @@ class SpellWiseWrapper(NormLabelAlgo):
         """
         words = list(words)
         words_filtered = [
-            word for word in words if not self._is_a_word_to_ignore(word=word)
+            word for word in words if not len(word) < self.min_nb_char
         ]
         n_removed = len(words) - len(words_filtered)
         if n_removed != 0 and warn:
@@ -129,21 +124,10 @@ class SpellWiseWrapper(NormLabelAlgo):
             )
         self._suggester.add_words(words=words_filtered)
 
-    def add_words_to_ignore(self, words: Iterable[str]):
-        """Add words that the algorithm will ignore: no string distance
-        will be computed."""
-        for word in words:
-            self._tokens2ignore[word] = None
-
-    def _is_a_word_to_ignore(self, word: str) -> bool:
-        """Check if this ignore must be ignored right away."""
-        if len(word) < self._min_nb_char or word in self._tokens2ignore:
-            return True
-        else:
-            return False
-
     def get_syns_of_word(self, word: str) -> Iterable[SynType]:
-        """Returns closest words if this the word is not a word to ignore."""
+        """Compute string distance if it is not a word to be ignored
+        and return keywords' unigrams in the maximum distance
+        from that word."""
         if self._is_a_word_to_ignore(word):
             return FuzzyAlgo.NO_SYN
         suggs: List[Suggestions] = self._suggester.get_suggestions(

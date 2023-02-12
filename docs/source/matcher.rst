@@ -1,56 +1,45 @@
 
 Matcher
-------
-The simplest example is to search a list of keywords in a document.
-By default, the :ref:`api_doc:Matcher` performs exact match only.
-
-
+-------
+The simplest example is to search a list of words in a document.
+To do so, :ref:`api_doc:Matcher` is the main public API of this package.
+I recommend to use the :ref:`api_doc:Matcher build` method to simplify its construction:
 
 With a list of words (keywords)
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
-
-        from iamsystem import Matcher
-        labels = ["acute respiratory distress syndrome", "diarrrhea"]
-        text = "Pt c/o Acute Respiratory Distress Syndrome and diarrrhea"
-        matcher = Matcher()
-        matcher.add_labels(labels=labels)
-        annots = matcher.annot_text(text=text)
-        for annot in annots:
-            print(annot)
-
-
-.. code-block:: pycon
-
-        # Acute Respiratory Distress Syndrome	7 42	acute respiratory distress syndrome
-        # diarrrhea	47 56	diarrrhea
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :start-after: # start_test_exact_match_keywords
+    :end-before: # end_test_exact_match_keywords
 
 The matcher outputs a list of :ref:`annotation:Annotation`.
-To add attributes, create a :ref:`api_doc:Keyword` subclass.
-The :ref:`api_doc:Term` class shown below associates a unique identifier to each label.
+By default, it performs exact match only.
+A limitation of passing words to the matcher is that no attributes are associated.
 
-With a list of terms
-^^^^^^^^^^^^^^^^^^^^
+With a list of entities
+^^^^^^^^^^^^^^^^^^^^^^^
 Often, keywords are derived from a knowledge graph that associates a label with a unique identifier.
-The :ref:`api_doc:Term` has a *code* attribute to store an identifier.
+The :ref:`api_doc:Entity` has a *kb_id* attribute to store an identifier.
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :start-after: # start_test_exact_match_ents
+    :end-before: # end_test_exact_match_ents
 
-        from iamsystem import Matcher, Term
-        term1 = Term(label="acute respiratory distress syndrome", code="J80")
-        term2 = Term(label="diarrrhea", code="R19.7")
-        text = "Pt c/o acute respiratory distress syndrome and diarrrhea"
-        matcher = Matcher()
-        matcher.add_keywords(keywords=[term1, term2])
-        annots = matcher.annot_text(text=text)
-        for annot in annots:
-            print(annot)
+With a custom of keyword subclass
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you need to add other attributes to a keyword, you can create your own :ref:`api_doc:IKeyword` implementation.
 
-.. code-block:: pycon
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :start-after: # start_test_exact_match_custom_keyword
+    :end-before: # end_test_exact_match_custom_keyword
 
-        # acute respiratory distress syndrome	7 42	acute respiratory distress syndrome (J80)
-        # diarrrhea (R19.7)	47	56
+Note you can add different keywords types.
 
 Context window (w)
 ^^^^^^^^^^^^^^^^^^
@@ -65,21 +54,12 @@ One solution would be to add *"blood"* to the :ref:`stopwords:Stopwords` list,
 however if *"blood"* is used by another keyword it would be a bad solution.
 Another solution is to set *w=2* that lets the algorithm searches 2 words after token *"calcium"*.
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 5
-
-        from iamsystem import Matcher
-        labels = ["calcium level"]
-        matcher = Matcher()
-        matcher.add_labels(labels=labels)
-        annots = matcher.annot_text(text="calcium blood level", w=2)
-        for annot in annots:
-            print(annot)
-
-.. code-block:: pycon
-
-        # calcium level	0 7;14 19	calcium level
+    :start-after: # start_test_window
+    :end-before: # end_test_window
 
 The semicolon indicates that the sequence is discontinuous.
 The first token "calcium" starts at character 0 and ends at character 6 (7-1).
@@ -92,14 +72,11 @@ Word order is important.
 When the sequence of words in the document is not the same as the words sequence of the keyword,
 the algorithm fails to detect it. For example:
 
-.. code-block:: python
-
-        from iamsystem import Matcher
-        labels = ["calcium level"]
-        matcher = Matcher()
-        matcher.add_labels(labels=labels)
-        annots = matcher.annot_text(text="level calcium", w=1)
-        print(len(annots)) # 0
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :start-after: # start_test_fail_order
+    :end-before: # end_test_fail_order
 
 This problem can be solved by changing the order of the tokens in a sentence
 which is the responsibility of the tokenizer.

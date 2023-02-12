@@ -8,6 +8,7 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 
+from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.util import TransitionState
 from iamsystem.tokenization.api import TokenT
@@ -20,8 +21,8 @@ from iamsystem.tokenization.util import replace_offsets_by_new_str
 
 
 class Annotation(Span[TokenT]):
-    """Ouput class of :class:`~iamsystem.Matcher` storing information about
-    linked entities."""
+    """Ouput class of :class:`~iamsystem.Matcher` storing information on the
+    detected entities."""
 
     def __init__(self, tokens_states: Sequence[TransitionState[TokenT]]):
         tokens: List[TokenT] = [tok_state.token for tok_state in tokens_states]
@@ -39,7 +40,7 @@ class Annotation(Span[TokenT]):
     def get_tokens_algos(self) -> Iterable[Tuple[TokenT, List[str]]]:
         """Get each token and the list of fuzzy algorithms that matched it.
 
-        :return: an iterator of tuples (token0, ['algo1',...]) where token0 is
+        :return: an itera  of tuples (token0, ['algo1',...]) where token0 is
             a token and ['algo1',...] a list of fuzzy algorithms.
         """
         return zip(self._tokens, self.algos)
@@ -59,7 +60,11 @@ class Annotation(Span[TokenT]):
             "norm_label": self.norm_label,
             "tokens": [itoken_to_dict(token) for token in self.tokens],
             "algos": self.algos,
-            "kb_ids": [keyword.get_kb_id() for keyword in self.keywords],
+            "kb_ids": [
+                keyword.kb_id
+                for keyword in self.keywords
+                if isinstance(keyword, IEntity)
+            ],
             "kw_labels": [keyword.label for keyword in self.keywords],
         }
         if text is not None:

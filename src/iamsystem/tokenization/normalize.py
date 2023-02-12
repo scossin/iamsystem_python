@@ -1,7 +1,7 @@
 """ String normalization functions. """
 from typing import Callable
 
-from unidecode import unidecode_expect_ascii
+from unidecode import unidecode_expect_ascii  # type: ignore
 
 
 normalizeFun = Callable[[str], str]

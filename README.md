@@ -25,24 +25,16 @@ See the [documentation](https://iamsystem-python.readthedocs.io/en/latest/) for 
 ### Quick example
 
 ```python
-from iamsystem import Matcher, Abbreviations, SpellWiseWrapper,\
-    ESpellWiseAlgo
-matcher = Matcher()
-# add a list of words to detect
-matcher.add_labels(labels=["North America", "South America"])
-matcher.add_stopwords(words=["and"])
-# add a list of abbreviations (optional)
-abbs = Abbreviations(name="common abbreviations")
-abbs.add(short_form="amer", long_form="America", tokenizer=matcher)
-matcher.add_fuzzy_algo(fuzzy_algo=abbs)
-# add a string distance algorithm (optional)
-levenshtein = SpellWiseWrapper(
-    ESpellWiseAlgo.LEVENSHTEIN, max_distance=1
+from iamsystem import Matcher
+
+matcher = Matcher.build(
+    keywords=["North America", "South America"],
+    stopwords=["and"],
+    abbreviations=[("amer", "America")],
+    spellwise=[dict(measure="Levenshtein", max_distance=1)],
+    w=2,
 )
-levenshtein.add_words(words=matcher.get_keywords_unigrams())
-matcher.add_fuzzy_algo(fuzzy_algo=levenshtein)
-# perform semantic annotation:
-annots = matcher.annot_text(text="Northh and south Amer.", w=2)
+annots = matcher.annot_text(text="Northh and south Amer.")
 for annot in annots:
     print(annot)
 # Northh Amer	0 6;17 21	North America
@@ -53,13 +45,16 @@ for annot in annots:
 ## Algorithm
 The algorithm was developed in the context of a [PhD thesis](https://theses.hal.science/tel-03857962/).
 It proposes a solution to quickly annotate documents using a large dictionary (> 300K keywords) and fuzzy matching algorithms.
-No string distance algorithm is implemented in this package, it imports and leverages external libraries like [spellwise](https://github.com/chinnichaitanya/spellwise)
-and [nltk](https://github.com/nltk/nltk).
-Its algorithmic complexity is O(n(log(m))) with n the number of tokens in a document and m the size of the dictionary.
+No string distance algorithm is implemented in this package, it imports and leverages external libraries like [spellwise](https://github.com/chinnichaitanya/spellwise),
+[pysimstring](https://github.com/percevalw/pysimstring) and [nltk](https://github.com/nltk/nltk).
+Its algorithmic complexity is *O(n(log(m)))* with n the number of tokens in a document and m the size of the dictionary.
 The formalization of the algorithm is available in this [paper](https://ceur-ws.org/Vol-3202/livingner-paper11.pdf).
 
-The algorithm was initially developed in Java (https://github.com/scossin/IAMsystem) and
-has participated in several semantic annotation competitions in the medical domain where it has obtained very satisfactory results.
+The algorithm was initially developed in Java (https://github.com/scossin/IAMsystem).
+It has participated in several semantic annotation competitions in the medical field where it has obtained satisfactory results,
+for example by obtaining the best results in the [Codiesp shared task]([https://temu.bsc.es/codiesp/index.php/2019/09/19/awards/).
+A dictionary-based model can achieve close performance to a transformer-based model when the task is simple or when the training set is small.
+Its main advantage is its speed, which allows a baseline to be generated quickly.
 
 ### Citation
 ```
@@ -76,8 +71,3 @@ has participated in several semantic annotation competitions in the medical doma
 	keywords = {Computer Science - Computation and Language},
 }
 ```
-
-## Changelog
-
-**0.1.1**
-* First release

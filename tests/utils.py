@@ -1,42 +1,42 @@
 from typing import List
 
 from iamsystem.keywords.collection import Terminology
+from iamsystem.keywords.keywords import Entity
 from iamsystem.keywords.keywords import Keyword
-from iamsystem.keywords.keywords import Term
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.token import Token
 from iamsystem.tokenization.tokenize import french_tokenizer
 
 
 def get_termino_ivg():
-    """Returns 2 nested terms."""
-    term1 = Term("Insuffisance Cardiaque", "I50.9")
-    term2 = Term("Insuffisance Cardiaque Gauche", "I50.1")
+    """Returns 2 nested ents."""
+    ent1 = Entity("Insuffisance Cardiaque", "I50.9")
+    ent2 = Entity("Insuffisance Cardiaque Gauche", "I50.1")
     termino = Terminology()
-    termino.add(term1)
-    termino.add(term2)
+    termino.add(ent1)
+    termino.add(ent2)
     return termino
 
 
 def get_termino_ulceres():
     """Returns 2 keywords."""
-    term1 = Keyword("Ulcère gastrique")
-    term2 = Keyword("Ulcère duodénale")
+    ent1 = Keyword("Ulcère gastrique")
+    ent2 = Keyword("Ulcère duodénale")
     termino = Terminology()
-    termino.add(term1)
-    termino.add(term2)
+    termino.add(ent1)
+    termino.add(ent2)
     return termino
 
 
 def get_termino_irc():
     """Terms with ambiguity: IRC is ambiguous."""
-    term1 = Term("Insuffisance Respiratoire Chronique", "J96.1")
-    term2 = Term("Insuffisance Rénale Chronique", "N18")
-    term3 = Term("Insuffisance Rénale Chronique Dialysée", "N18.X")
+    ent1 = Entity("Insuffisance Respiratoire Chronique", "J96.1")
+    ent2 = Entity("Insuffisance Rénale Chronique", "N18")
+    ent3 = Entity("Insuffisance Rénale Chronique Dialysée", "N18.X")
     termino = Terminology()
-    termino.add(term1)
-    termino.add(term2)
-    termino.add(term3)
+    termino.add(ent1)
+    termino.add(ent2)
+    termino.add(ent3)
     return termino
 
 

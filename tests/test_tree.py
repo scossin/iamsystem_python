@@ -1,6 +1,6 @@
 import unittest
 
-from iamsystem.keywords.keywords import Term
+from iamsystem.keywords.keywords import Entity
 from iamsystem.stopwords.simple import Stopwords
 from iamsystem.tokenization.normalize import lower_no_accents
 from iamsystem.tokenization.tokenize import TokenizerImp
@@ -23,15 +23,15 @@ class TrieTest(unittest.TestCase):
         """Number of tokens in keywords."""
         trie = Trie()
         self.assertEqual(1, trie.get_number_of_nodes())
-        # first term
-        term = Term("Insuffisance Cardiaque", "I50.9")
+        # first ent
+        ent = Entity("Insuffisance Cardiaque", "I50.9")
         tokens = ["insuffisance", "cardiaque"]
-        trie.add_keyword_with_tokens(keyword=term, tokens=tokens)
+        trie.add_keyword_with_tokens(keyword=ent, tokens=tokens)
         self.assertEqual(3, trie.get_number_of_nodes())  # one per token
-        # second term
-        term = Term("Insuffisance Cardiaque Gauche", "I50.1")
+        # second ent
+        ent = Entity("Insuffisance Cardiaque Gauche", "I50.1")
         tokens = ["insuffisance", "cardiaque", "gauche"]
-        trie.add_keyword_with_tokens(keyword=term, tokens=tokens)
+        trie.add_keyword_with_tokens(keyword=ent, tokens=tokens)
         self.assertEqual(3 + 1, trie.get_number_of_nodes())  # new node gauche
 
     def test_get_initial_state(self):
@@ -53,7 +53,7 @@ class TrieTest(unittest.TestCase):
         )
 
     def test_build_trie_with_stopword(self):
-        """Check the tries doesn't create a node if the term is a stopword"""
+        """Check the tries doesn't create a node if the ent is a stopword"""
         trie = Trie()
         trie.add_keywords(
             keywords=self.terminoIVG,
@@ -101,7 +101,7 @@ class TrieTest(unittest.TestCase):
             trie.get_initial_state().has_transition_to("Insuffisance")
         )
 
-    def test_build_trie_warning_term_not_added(self):
+    def test_build_trie_warning_ent_not_added(self):
         """Stopwords are removed before added to the trie.
         If no tokens remain, a warning is generated.
         """
@@ -133,11 +133,11 @@ class NodeTest(unittest.TestCase):
         )
 
     def test_keyword_not_overriden(self):
-        """Adding the same term to a node doesn't override it."""
-        term = Term("Insuffisance Cardiaque Gauche", "XXX")
+        """Adding the same ent to a node doesn't override it."""
+        ent = Entity("Insuffisance Cardiaque Gauche", "XXX")
         node = Node(node_num=3, token="gauche")
-        node.add_keyword(term)
-        node.add_keyword(term)
+        node.add_keyword(ent)
+        node.add_keyword(ent)
         self.assertEqual(2, len(list(node.get_keywords())))
 
     def test_node_equality(self):
@@ -203,16 +203,16 @@ class NodeTest(unittest.TestCase):
         """iff a keyword is associated to a Node."""
         ins_node = Node(token="insuffisance", node_num=1)
         self.assertFalse(ins_node.is_a_final_state())
-        term = Term("Insuffisance", "XXX")
-        ins_node.add_keyword(term)
+        ent = Entity("Insuffisance", "XXX")
+        ins_node.add_keyword(ent)
         self.assertTrue(ins_node.is_a_final_state())
 
     def test_get_keywords(self):
         """Add and retrieve an added keyword."""
         ins_node = Node(token="insuffisance", node_num=1)
-        term = Term("Insuffisance", "XXX")
-        ins_node.add_keyword(term)
-        self.assertTrue(term in ins_node.get_keywords())
+        ent = Entity("Insuffisance", "XXX")
+        ins_node.add_keyword(ent)
+        self.assertTrue(ent in ins_node.get_keywords())
 
 
 class EmptyNodeTest(unittest.TestCase):

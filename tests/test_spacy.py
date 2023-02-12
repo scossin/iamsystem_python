@@ -1,3 +1,4 @@
+""" Tests spacy components."""
 import unittest
 
 from typing import Iterable
@@ -7,26 +8,28 @@ import spacy
 
 from spacy.lang.fr import French
 
-from iamsystem import Abbreviations
-from iamsystem import Annotation
-from iamsystem import FuzzyAlgo
-from iamsystem import IKeyword
-from iamsystem import IStopwords
-from iamsystem import Term
-from iamsystem import Terminology
-from iamsystem import french_tokenizer
+from iamsystem.fuzzy.abbreviations import Abbreviations
+from iamsystem.fuzzy.api import FuzzyAlgo
+from iamsystem.keywords.api import IKeyword
+from iamsystem.keywords.collection import Terminology
+from iamsystem.keywords.keywords import Entity
+from iamsystem.keywords.keywords import Keyword
+from iamsystem.matcher.annotation import Annotation
+from iamsystem.spacy.component import IAMsystemBuildSpacy  # noqa
 from iamsystem.spacy.component import IAMsystemSpacy  # noqa
 from iamsystem.spacy.stopwords import IsStopSpacy
 from iamsystem.spacy.token import TokenSpacyAdapter
+from iamsystem.stopwords.api import IStopwords
+from iamsystem.tokenization.tokenize import french_tokenizer
 
 
-@spacy.registry.misc("umls_terms.v1")
+@spacy.registry.misc("umls_ents.v1")
 def get_termino_umls() -> Iterable[IKeyword]:
-    """An imaginary set of umls terms."""
+    """An imaginary set of umls ents."""
     termino = Terminology()
-    term1 = Term("Insuffisance Cardiaque", "I50.9")
-    term2 = Term("Insuffisance Cardiaque Gauche", "I50.1")
-    termino.add_keywords(keywords=[term1, term2])
+    ent1 = Entity("Insuffisance Cardiaque", "I50.9")
+    ent2 = Entity("Insuffisance Cardiaque Gauche", "I50.1")
+    termino.add_keywords(keywords=[ent1, ent2])
     return termino
 
 
@@ -60,7 +63,7 @@ class SpacyCompTest(unittest.TestCase):
             name="iamsystem",
             last=True,
             config={
-                "keywords": {"@misc": "umls_terms.v1"},
+                "keywords": {"@misc": "umls_ents.v1"},
                 "stopwords": {"@misc": "stopwords_spacy.v1"},
                 "fuzzy_algos": {"@misc": "fuzzy_algos_short_notes.v1"},
             },
@@ -98,7 +101,7 @@ class SpacyCompTest(unittest.TestCase):
             name="iamsystem",
             last=True,
             config={
-                "keywords": {"@misc": "umls_terms.v1"},
+                "keywords": {"@misc": "umls_ents.v1"},
                 "stopwords": {"@misc": "stopwords_spacy.v1"},
                 "fuzzy_algos": {"@misc": "fuzzy_algos_short_notes.v1"},
                 "w": 4,
@@ -107,6 +110,81 @@ class SpacyCompTest(unittest.TestCase):
         )
         doc = nlp("ic: contraction du ventricule gauche faible")
         self.assertEqual(2, len(doc.spans["iamsystem"]))
+
+    def test_matcher(self):
+        """Change window and remove_nested default.
+        Two annots: 'ic' and 'ic cardiaque'.
+        """
+        nlp = French()
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="iamsystem",
+            last=True,
+            config={
+                "build_params": {
+                    "keywords": {"@misc": "umls_ents.v1"},
+                }
+                # "stopwords": {"@misc": "stopwords_spacy.v1"},
+                # "fuzzy_algos": {"@misc": "fuzzy_algos_short_notes.v1"},
+                # "w": 4,
+                # "remove_nested_annots": False,
+            },
+        )
+        doc = nlp("insuffisance cardiaque gauche")
+        self.assertEqual(1, len(doc.spans["iamsystem"]))
+
+    def test_serializable_json(self):
+        """Change window and remove_nested default.
+        Two annots: 'ic' and 'ic cardiaque'.
+        """
+        nlp = French()
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="iamsystem",
+            last=True,
+            config={
+                "serialized_kw": {
+                    "module": "iamsystem",
+                    "class_name": "Keyword",
+                    "kws": [Keyword(label="insuffisance cardiaque").asdict()],
+                },
+                "build_params": {"w": 1},
+            },
+        )
+        doc = nlp("insuffisance cardiaque gauche")
+        self.assertEqual(1, len(doc.spans["iamsystem"]))
+
+    def test_all_params(self):
+        """Test detection adding all the parameters."""
+        nlp = French()
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="iamsystem",
+            last=True,
+            config={
+                "build_params": {
+                    "keywords": [
+                        "insuffisance cardiaque",
+                        "insuffisance cardiaque gauche en valueannees",
+                    ],
+                    "stopwords": ["à"],
+                    "negative": True,
+                    "w": 4,
+                    "remove_nested_annots": True,
+                    "spellwise": [dict(max_distance=1, measure="Levenshtein")],
+                    "simstring": [dict(threshold=1, measure="dice")],
+                    "fuzzy_regex": [
+                        dict(
+                            name="detection_annee",
+                            pattern=r"[(19|20)0-9{2}]",
+                            pattern_name="valueannees",
+                        )
+                    ],
+                },
+            },
+        )
+        doc = nlp("insuffisance cardiaque gauche en 2010")
+        self.assertEqual(1, len(doc.spans["iamsystem"]))
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ Introduction
 ^^^^^^^^^^^^
 
 iamsystem algorithm tries to match a sequence of tokens in a document to a sequence of tokens in a keyword.
-The default fuzzy algorithm of the :ref:`matcher:Matcher` class is the exact match algorithm.
+The default fuzzy algorithm of the :ref:`api_doc:Matcher` class is the exact match algorithm.
 In general, in entity linking tasks, exact matching has high precision but low recall since a single
 character difference in a token can lead to a miss.
 
@@ -34,103 +34,43 @@ If your keywords contain **regular expressions**, the :ref:`fuzzy:FuzzyRegex` cl
 Remember that for each token in the document, all fuzzy algorithms added to the :ref:`matcher:Matcher`
 will be called, so the more algorithms you add, the slower iamsystem.
 However, algorithms that are context independant can be cached to avoid calling them multiple times.
-See :ref:`fuzzy:CacheFuzzyAlgos`.
 
 Abbreviations
 ^^^^^^^^^^^^^
 The :ref:`api_doc:Abbreviations` class allows you to provide a sense inventory of abbreviations
 to the matcher.
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 3,4,5
-
-        from iamsystem import Matcher, Abbreviations, english_tokenizer, Term
-        tokenizer = english_tokenizer()
-        abbs = Abbreviations(name="abbs")
-        abbs.add(short_form="Pt", long_form="patient", tokenizer=tokenizer)
-        abbs.add(short_form="PT", long_form="physiotherapy", tokenizer=tokenizer)
-        abbs.add(short_form="ARD", long_form="Acute Respiratory Distress", tokenizer=tokenizer)
-        matcher = Matcher(tokenizer=tokenizer)
-        term1 = Term(label="acute respiratory distress", code="J80")
-        term2 = Term(label="patient", code="D007290")
-        term3 = Term(label="patient hospitalized", code="D007297")
-        term4 = Term(label="physiotherapy", code="D007297")
-        matcher.add_keywords(keywords=[term1, term2, term3, term4])
-        matcher.add_fuzzy_algo(fuzzy_algo=abbs)
-        annots = matcher.annot_text(text="Pt hospitalized with ARD. Treament: PT")
-        for annot in annots:
-            print(annot.to_string(debug=True))
-
-
-.. code-block:: pycon
-
-        # Pt hospitalized	0 15	patient hospitalized (D007297)	pt(abbs);hospitalized(exact)
-        # ARD	21 24	acute respiratory distress (J80)	ard(abbs)
-        # PT	36 38	patient (D007290)	pt(abbs)
-        # PT	36 38	physiotherapy (D007297)	pt(abbs)
+    :start-after: # start_test_abbreviations
+    :end-before: # end_test_abbreviations
 
 Note the following:
 
 - The first word "Pt" is associated with a single annotation.
 
-Since "hospitalized" comes after the abbreviation and since the matcher removes nested keywords
+Since "hospitalized" comes after the abbreviation and since the matcher removes nested annotation
 by default (See :ref:`annotation:Full overlapping`), the ambiguity is removed.
 
 - The last word "PT" has two annotations
 
 The :ref:`api_doc:Abbreviations` is context independent and cannot resolve the ambiguity here.
-To solve this problem, the annotations could be post-processed to identify the correct long form.
-A second solution would be to create a custom :ref:`api_doc:FuzzyAlgo` instance which
-would be context dependent and which would return the most likely long.
-
+To solve this problem, the annotations need to be post-processed (rules, language models...) to identify the most likely long form.
 
 In the case where two abbreviations have different string cases
 (Pt stands only for patient and PT for physiotherapy), the :ref:`api_doc:Abbreviations` class
 can be configured to be case sensitive.
-
-
 The :ref:`api_doc:Abbreviations` class can be configured with a method that
 checks if the document's token is an abbreviation or not:
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 12,15
-
-
-        from iamsystem import Matcher, Abbreviations, english_tokenizer, Term, TokenT
-
-        def upper_case_only(token: TokenT) -> bool:
-            """ Return True if all token's characters are uppercase."""
-            return token.label.isupper()
-
-        def first_letter_capitalized(token: TokenT) -> bool:
-            """ Return True if the first letter is uppercase."""
-            return token.label[0].isupper() and not token.label.isupper()
-
-        tokenizer = english_tokenizer()
-        abbs_upper = Abbreviations(name="upper case abbs", token_is_an_abbreviation=upper_case_only)
-        abbs_upper.add(short_form="PT", long_form="physiotherapy", tokenizer=tokenizer)
-        abbs_upper.add(short_form="ARD", long_form="Acute Respiratory Distress", tokenizer=tokenizer)
-        abbs_capitalized = Abbreviations(name="capitalized abbs", token_is_an_abbreviation=first_letter_capitalized)
-        abbs_capitalized.add(short_form="Pt", long_form="patient", tokenizer=tokenizer)
-        matcher = Matcher(tokenizer=tokenizer)
-        term1 = Term(label="acute respiratory distress", code="J80")
-        term2 = Term(label="patient", code="D007290")
-        term3 = Term(label="patient hospitalized", code="D007297")
-        term4 = Term(label="physiotherapy", code="D007297")
-        matcher.add_keywords(keywords=[term1, term2, term3, term4])
-        matcher.add_fuzzy_algo(fuzzy_algo=abbs_upper)
-        matcher.add_fuzzy_algo(fuzzy_algo=abbs_capitalized)
-        annots = matcher.annot_text(text="Pt hospitalized with ARD. Treament: PT")
-        for annot in annots:
-            print(annot.to_string(debug=True))
-
-.. code-block:: pycon
-
-        # Pt hospitalized	0 15	patient hospitalized (D007297)	pt(capitalized abbs);hospitalized(exact)
-        # ARD	21 24	acute respiratory distress (J80)	ard(upper case abbs)
-        # PT	36 38	physiotherapy (D007297)	pt(upper case abbs)
+    :start-after: # start_test_uppercase
+    :end-before: # end_test_uppercase
 
 Notice that TokenT is a generic token type, so
 if you use a custom tokenizer (i.e. from an external library like spaCy) you can access custom attributes.
@@ -139,47 +79,66 @@ if you use a custom tokenizer (i.e. from an external library like spaCy) you can
 String Distance
 ^^^^^^^^^^^^^^^
 .. _spellwise: https://github.com/chinnichaitanya/spellwise
+.. _pysimstring: https://github.com/percevalw/pysimstring
 
-This package utilizes the `spellwise`_ python library to access string distance algorithms.
-In the example below, iamsystem is configured with two spelling algorithms:
+
+This package utilizes the `spellwise`_ and `pysimstring`_ libraries to access string distance algorithms.
+
+Spellwise
+"""""""""
+
+In the example below, iamsystem is configured with two spellwise algorithms:
 Levenshtein distance which measures the number of edits needed to transform one word into another,
 and Soundex which is a phonetic algorithm.
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 6,7,8,9
+    :start-after: # start_test_spellwise
+    :end-before: # end_test_spellwise
 
-        from iamsystem import ESpellWiseAlgo
-        from iamsystem import Matcher
-        from iamsystem import SpellWiseWrapper
-        from iamsystem import Term
-
-        levenshtein = SpellWiseWrapper(
-            ESpellWiseAlgo.LEVENSHTEIN, max_distance=1, min_nb_char=5
-        )
-        soundex = SpellWiseWrapper(ESpellWiseAlgo.SOUNDEX, max_distance=1)
-        term1 = Term(label="acute respiratory distress", code="J80")
-        matcher = Matcher()
-        matcher.add_keywords(keywords=[term1])
-        for algo in [levenshtein, soundex]:
-            algo.add_words(words=matcher.get_keywords_unigrams())
-            matcher.add_fuzzy_algo(algo)
-        annots = matcher.annot_text(text="acute resiratory distresssss")
-        for annot in annots:
-            print(annot.to_string(debug=True))
-
-.. code-block:: pycon
-
-           # acute resiratory distresssss	0 28	acute respiratory distress (J80)	acute(exact,LEVENSHTEIN,SOUNDEX);resiratory(LEVENSHTEIN);distresssss(SOUNDEX)
-
-The *get_unigrams* function retrieve all the single words (excluding stopwords) form the keywords.
-Spellwise algorithms need to get the keywords'words to return a suggestion.
+The *spellwise* parameter of the build function expects an iterable of dictionary.
+The key-value pairs of a dictionary are passed to the :ref:`api_doc:SpellWiseWrapper` init function.
+Since a string distance algorithm is context independent, the build function placed them in a :ref:`fuzzy:CacheFuzzyAlgos`
+to avoid calling them multiple times.
 For a list of available Spellwise algorithms, see :ref:`api_doc:ESpellWiseAlgo`.
-See also :ref:`api_doc:SpellWiseWrapper` for configuration.
 
-When the number of keywords is large, these algorithms can be slow.
-Since their output doesn't depend on the context,
-I recommend using the :ref:`fuzzy:CacheFuzzyAlgos` class to store them.
+String distance algorithms are often used to detect typos in a document.
+False positives are common since two words could have a short string distance.
+To avoid calling a string distance algorithm on common words of a language, you can set
+*string_distance_ignored_w* parameter:
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_string_distance_ignored_w
+    :end-before: # end_test_string_distance_ignored_w
+
+Since *poils* is one substitution from *poids*, the algorithm returns a false positive.
+By telling the algorithm to ignore common words French words like *poils*, the string distance algorithm
+is called only for unknown words.
+
+SimString
+"""""""""
+.. _simstring: http://chokkan.org/software/simstring/
+
+The `pysimstring`_ library provides an API to the fast `simstring`_ algorithm implemented in C++.
+The *simstring* parameter of the build function expects an iterable of dictionary.
+The key-value pairs of a dictionary are passed to the :ref:`api_doc:SimStringWrapper` init function.
+Since a string distance algorithm is context independent, the build function placed them in a :ref:`fuzzy:CacheFuzzyAlgos`
+to avoid calling them multiple times.
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_simstring
+    :end-before: # end_test_simstring
+
+Using the cosine similarity and a threshold of 0.7,
+the tokens *respiratori* matched to *respiratory* and *disstress* matched to *distress*.
 
 CacheFuzzyAlgos
 ^^^^^^^^^^^^^^^
@@ -188,43 +147,17 @@ Fuzzy algorithms that are not context depend can be cached to avoid calling them
 The :ref:`api_doc:CacheFuzzyAlgos` stores fuzzy algorithms, calls them once and then stores
 their results.
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 17, 20, 22
-
-        from iamsystem import Abbreviations
-        from iamsystem import CacheFuzzyAlgos
-        from iamsystem import ESpellWiseAlgo
-        from iamsystem import Matcher
-        from iamsystem import SpellWiseWrapper
-        from iamsystem import Term
-
-        matcher = Matcher()
-        abbs = Abbreviations(name="abbs")
-        abbs.add(short_form="a", long_form="acute", tokenizer=matcher)
-        levenshtein = SpellWiseWrapper(
-            ESpellWiseAlgo.LEVENSHTEIN, max_distance=1, min_nb_char=5
-        )
-        soundex = SpellWiseWrapper(ESpellWiseAlgo.SOUNDEX, max_distance=1)
-        term1 = Term(label="acute respiratory distress", code="J80")
-        matcher.add_keywords(keywords=[term1])
-        cache = CacheFuzzyAlgos()
-        for algo in [levenshtein, soundex]:
-            algo.add_words(words=matcher.get_keywords_unigrams())
-            cache.add_algo(algo=algo)
-        # cache.add_algo(algo=abbs)  ## no need to be this one in cache
-        matcher.add_fuzzy_algo(fuzzy_algo=cache)
-        matcher.add_fuzzy_algo(fuzzy_algo=abbs)
-        annots = matcher.annot_text(text="a resiratory distresssss")
-        for annot in annots:
-            print(annot.to_string(debug=True))
-
-.. code-block:: pycon
-
-        # acute resiratory distresssss	0 28	acute respiratory distress (J80)	acute(exact,LEVENSHTEIN,SOUNDEX);resiratory(LEVENSHTEIN);distresssss(SOUNDEX)
+    :emphasize-lines:  17, 20, 22
+    :start-after: # start_test_cache_fuzzy_algos
+    :end-before: # end_test_cache_fuzzy_algos
 
 Note that although we could have put the Abbreviations instance in the cache, it's not necessary
-to do so since this algorithm is a fast as the cache because it stores the abbreviations in a dictionary.
+to do so since this algorithm is as fast as the cache.
+If you use the *build* function of the matcher, string distance algorithms are automatically cached.
 
 
 FuzzyRegex
@@ -234,33 +167,19 @@ Regular expressions are very useful and can be used with iamsystem.
 For example, if you want to detect blood test results in electronic health records,
 such as calcium levels in blood, you can have a regular expression in your
 keyword: *"calcium (^\d*[.,]?\d*$) mmol/L"*.
-The class :ref:`api_doc:FuzzyRegex` allows you to do this.
+The *fuzzy_regex* parameter expects an iterable of dictionary. Key-value pairs of the dictionary correspond to
+:ref:`api_doc:FuzzyRegex` init function parameters.
+
 The regular expression *(^\d*[.,]?\d*$)* is placed in the FuzzyRegex instance,
-with a patter name (ex: *numval*), and the pattern name is placed in your keyword
+with a patter name (ex: *numval*), and the pattern name is placed in the keyword
 (*"calcium numval mmol/L"*).
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 2,3,7
-
-        from iamsystem import Matcher, FuzzyRegex, split_find_iter_closure, english_tokenizer
-        fuzzy = FuzzyRegex(algo_name="regex_num", pattern=r"^\d*[.,]?\d*$", pattern_name="numval")
-        split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
-        tokenizer = english_tokenizer()
-        tokenizer.split = split
-        detector = Matcher(tokenizer=tokenizer)
-        detector.add_labels(labels=["calcium numval mmol/L"])
-        detector.add_stopwords(words=["level", "is", "normal"])
-        detector.add_fuzzy_algo(fuzzy_algo=fuzzy)
-        annots = detector.annot_text(text="the blood calcium level is normal: 2.1 mmol/L", w=1)
-        for annot in annots:
-            print(annot)
-        # calcium 2.1 mmol L	10 17;35 45	calcium numval mmol/L
-        self.assertEqual(1, len(annots))
-
-.. code-block:: pycon
-
-        # calcium 2.1 mmol L	10 17;35 45	calcium numval mmol/L
+    :start-after: # start_test_fuzzy_regex
+    :end-before: # end_test_fuzzy_regex
 
 Note that the :ref:`tokenizer:Default split function` must be modified to detect decimal values.
 Also note that the label of the keyword *"calcium numval mmol/L"* (line 7) contains the same pattern name *numval*.
@@ -273,46 +192,12 @@ It's often the case that intermediate words are not known in avance, so this met
 Another way to do exactly the same annotation is to use the :ref:`stopwords:NegativeStopwords` class
 which ignores all unigrams that are not in the keywords:
 
-.. code-block:: python
-
-        from iamsystem import FuzzyRegex
-        from iamsystem import Keyword
-        from iamsystem import Matcher
-        from iamsystem import NegativeStopwords
-        from iamsystem import NoStopwords
-        from iamsystem import Terminology
-        from iamsystem import english_tokenizer
-        from iamsystem import split_find_iter_closure
-
-        fuzzy = FuzzyRegex(
-            algo_name="regex_num",
-            pattern=r"^\d*[.,]?\d*$",
-            pattern_name="numval",
-        )
-        split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
-        tokenizer = english_tokenizer()
-        tokenizer.split = split
-        keyword = Keyword(label="calcium numval mmol/L")
-        termino = Terminology()
-        termino.add_keywords(keywords=[keyword])
-        stopwords = NegativeStopwords(
-            words_to_keep=termino.get_unigrams(
-                tokenizer=tokenizer, stopwords=NoStopwords()
-            )
-        )
-        stopwords.add_fun_is_a_word_to_keep(fuzzy.token_matches_pattern)
-        matcher = Matcher(tokenizer=tokenizer, stopwords=stopwords)
-        matcher.add_keywords(keywords=termino)
-        matcher.add_fuzzy_algo(fuzzy_algo=fuzzy)
-        annots = matcher.annot_text(
-            text="the blood calcium level is normal: 2.1 mmol/L", w=1
-        )
-        for annot in annots:
-            print(annot)
-
-.. code-block:: pycon
-
-        # calcium 2.1 mmol L	10 17;35 45	calcium numval mmol/L
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_fuzzy_regex_negative_stopwords
+    :end-before: # end_test_fuzzy_regex_negative_stopwords
 
 WordNormalizer
 ^^^^^^^^^^^^^^
@@ -329,35 +214,12 @@ A token in a document will match a token in a keyword if they have the same norm
 In the example below, `nltk`_ is used to access a French stemmer.
 The stemming function is given to the :ref:`api_doc:WordNormalizer` class:
 
-.. code-block:: python
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
     :linenos:
-    :emphasize-lines: 12,13,14
-
-        from nltk.stem.snowball import FrenchStemmer
-
-        from iamsystem import Matcher
-        from iamsystem import Term
-        from iamsystem import WordNormalizer
-        from iamsystem import french_tokenizer
-
-        tokenizer = french_tokenizer()
-        matcher = Matcher(tokenizer=tokenizer)
-        matcher.add_stopwords(words=["de", "la"])
-        stemmer = FrenchStemmer()
-        fuzzy_stemmer = WordNormalizer(
-            name="french_stemmer", norm_fun=stemmer.stem
-        )
-        term1 = Term(label="cancer de la prostate", code="C61")
-        matcher.add_keywords(keywords=[term1])
-        fuzzy_stemmer.add_words(words=matcher.get_keywords_unigrams())
-        matcher.add_fuzzy_algo(fuzzy_stemmer)
-        annots = matcher.annot_text(text="cancer prostatique")
-        for annot in annots:
-            print(annot)
-
-.. code-block:: pycon
-
-         # cancer prostatique	0 18	cancer de la prostate (C72)
+    :start-after: # start_test_word_normalization
+    :end-before: # end_test_word_normalization
 
 
 Abstract Base classes

@@ -3,6 +3,8 @@ import unittest
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.spellwise import SpellWiseWrapper
+from iamsystem.fuzzy.util import SimpleWords2ignore
+from iamsystem.matcher.matcher import Matcher
 from iamsystem.stopwords.simple import Stopwords
 from iamsystem.tokenization.tokenize import french_tokenizer
 from tests.utils import get_termino_ivg
@@ -31,6 +33,29 @@ class SpellWiseTest(unittest.TestCase):
     def test_algo_name(self):
         """Returns the Enum value by default."""
         self.assertEqual("LEVENSHTEIN", self.leven.name)
+
+    def test_init_measure_str(self):
+        """Check no error if passing the measure name."""
+        algo: SpellWiseWrapper = SpellWiseWrapper(
+            measure="LEVENSHTEIN", max_distance=1
+        )
+        algo.add_words(words=self.unigrams)
+        syns = self.leven.get_syns_of_word("insufisance")
+        self.assertTrue(self.tuple_ins in syns)
+
+    def test_init_measure_str_lower(self):
+        """Check no error if passing the measure name in lowercase."""
+        algo: SpellWiseWrapper = SpellWiseWrapper(
+            measure="Levenshtein", max_distance=1
+        )
+        algo.add_words(words=self.unigrams)
+        syns = self.leven.get_syns_of_word("insufisance")
+        self.assertTrue(self.tuple_ins in syns)
+
+    def test_init_measure_misspelled(self):
+        """Check error if misspelled."""
+        with (self.assertRaises(KeyError)):
+            SpellWiseWrapper(measure="Levenstein", max_distance=1)
 
     def test_levenshtein_get_synonyms(self):
         """a 'f' is missing in 'insuffisance'."""
@@ -66,10 +91,28 @@ class SpellWiseTest(unittest.TestCase):
 
     def test_words_to_ignore(self):
         """If a word is ignored then the algorithm returns nothing."""
-        self.leven.add_words_to_ignore(words=["word"])
-        self.leven.add_words(words=["word"])
-        syns = self.leven.get_syns_of_word("word")
+        words2ignore = SimpleWords2ignore(words=["north"])
+        leven: SpellWiseWrapper = SpellWiseWrapper(
+            ESpellWiseAlgo.LEVENSHTEIN,
+            max_distance=1,
+            words2ignore=words2ignore,
+        )
+        leven.add_words(words=["north"])
+        self.assertTrue(leven._is_a_word_to_ignore("north"))
+        syns = leven.get_syns_of_word("north")
         self.assertIs(syns, FuzzyAlgo.NO_SYN)
+        syns = list(leven.get_syns_of_word("nouth"))
+        self.assertEqual(1, len(syns))
+
+    def test_add_words_to_ignore(self):
+        """If a word is ignored then the algorithm returns nothing.
+        Deprecated method, words_to_ignore must be passed in init.
+        """
+        with self.assertWarns(Warning):
+            self.leven.add_words_to_ignore(words=["word"])
+            self.leven.add_words(words=["word"])
+            syns = self.leven.get_syns_of_word("word")
+            self.assertIs(syns, FuzzyAlgo.NO_SYN)
 
     def test_soundex(self):
         """Sounds like 'insuffisance'."""
@@ -84,6 +127,44 @@ class SpellWiseTest(unittest.TestCase):
         self.assertTrue(self.tuple_ins not in syns)
         syns = editex.get_syns_of_word("insufizzance")
         self.assertTrue(self.tuple_ins in syns)
+
+
+class SimpleWord2ignoreTest(unittest.TestCase):
+    def test_init(self):
+        """Check words added are ignored."""
+        words = ["couche"]
+        words2ignore = SimpleWords2ignore(words=words)
+        self.assertTrue(words2ignore.is_word_2_ignore(word="couche"))
+        self.assertFalse(words2ignore.is_word_2_ignore(word="autre"))
+
+    def test_without_words_2_ignore(self):
+        """Test a false positive is detected: couche is one string distance
+        away from mouche."""
+        matcher = Matcher()
+        matcher.add_keywords(keywords=["mouche"])
+        leven: SpellWiseWrapper = SpellWiseWrapper(
+            measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1
+        )
+        leven.add_words(words=matcher.get_keywords_unigrams())
+        matcher.add_fuzzy_algo(leven)
+        annots = matcher.annot_text(text="une couche")
+        self.assertEqual(1, len(annots))
+
+    def test_with_words_2_ignore(self):
+        """Test levenshtein algorithm doesn't return 'mouche' for word
+        'couche' when adding words2ignore."""
+        matcher = Matcher()
+        matcher.add_keywords(keywords=["mouche"])
+        words2ignore = SimpleWords2ignore(words=["couche"])
+        leven: SpellWiseWrapper = SpellWiseWrapper(
+            measure=ESpellWiseAlgo.LEVENSHTEIN,
+            max_distance=1,
+            words2ignore=words2ignore,
+        )
+        leven.add_words(words=matcher.get_keywords_unigrams())
+        matcher.add_fuzzy_algo(leven)
+        annots = matcher.annot_text(text="une couche")
+        self.assertEqual(0, len(annots))
 
 
 if __name__ == "__main__":

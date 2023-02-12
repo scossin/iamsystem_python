@@ -20,15 +20,15 @@ class FuzzyRegex(ContextFreeAlgo, INormLabelAlgo):
     to a regular expression.
     """
 
-    def __init__(self, algo_name: str, pattern: str, pattern_name: str):
+    def __init__(self, name: str, pattern: str, pattern_name: str):
         """Create a FuzzyRegex instance.
 
-        :param algo_name: a name given to this algorithm.
+        :param name: a name given to this algorithm.
         :param pattern: a regular expression.
         :param pattern_name: a name given to this pattern (ex: 'numval')
             that is also a token of a :class:`~iamsystem.IKeyword`.
         """
-        super().__init__(algo_name)
+        super().__init__(name=name)
         self.pattern_name = pattern_name
         self.r = re.compile(pattern)  # r"^\d*[.,]?\d*$"
 

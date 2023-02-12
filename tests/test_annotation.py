@@ -1,6 +1,6 @@
 import unittest
 
-from iamsystem.keywords.keywords import Term
+from iamsystem.keywords.keywords import Entity
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import create_annot
 from iamsystem.matcher.annotation import is_ancestor_annot_of
@@ -13,11 +13,11 @@ from tests.utils_detector import get_gauche_el_in_ivg
 
 
 class AnnotationTest(unittest.TestCase):
-    def test_rm_nested_terms_right_overlapping(self):
+    def test_rm_nested_ents_right_overlapping(self):
         """Since 'prostate cancer' overlaps 'cancer', 'cancer' is a nested
         annotation to remove. 'cancer' is right-most token."""
         matcher = Matcher()
-        matcher.add_labels(labels=["prostate cancer", "cancer"])
+        matcher.add_keywords(keywords=["prostate cancer", "cancer"])
         matcher.remove_nested_annots = False
         annots = matcher.annot_text(text="prostate cancer")
         self.assertEqual(2, len(annots))
@@ -30,9 +30,9 @@ class AnnotationTest(unittest.TestCase):
 
     def setUp(self) -> None:
         matcher = Matcher()
-        term_prostate_cancer = Term(label="prostate cancer", code="PK")
-        term_cancer = Term(label="prostate", code="P")
-        matcher.add_keywords(keywords=[term_cancer, term_prostate_cancer])
+        ent_prostate_cancer = Entity(label="prostate cancer", kb_id="PK")
+        ent_cancer = Entity(label="prostate", kb_id="P")
+        matcher.add_keywords(keywords=[ent_cancer, ent_prostate_cancer])
         self.text = "diagnosis of Prostate Cancer"
         matcher.remove_nested_annots = False
         self.annots = matcher.annot_text(text=self.text)
@@ -45,13 +45,15 @@ class AnnotationTest(unittest.TestCase):
         self.assertEqual(self.prostate_annot.label, "Prostate")
         self.assertEqual(self.prostate_cancer_annot.label, "Prostate Cancer")
 
-    def test_rm_nested_terms_middle(self):
+    def test_rm_nested_ents_middle(self):
         """Since 'prostate cancer undocumented' overlaps 'cancer',
         'cancer' is a nested annotation to remove.
-        Check it work with a middle term.
+        Check it work with a middle ent.
         """
         matcher = Matcher()
-        matcher.add_labels(labels=["prostate cancer undocumented", "cancer"])
+        matcher.add_keywords(
+            keywords=["prostate cancer undocumented", "cancer"]
+        )
         matcher.remove_nested_annots = False
         annots = matcher.annot_text(text="prostate cancer undocumented")
         self.assertEqual(2, len(annots))
@@ -62,7 +64,7 @@ class AnnotationTest(unittest.TestCase):
         annots_filt = rm_nested_annots(annots)
         self.assertTrue(annot_2_remove not in annots_filt)
 
-    def test_rm_nested_terms_left_overlapping(self):
+    def test_rm_nested_ents_left_overlapping(self):
         """Since 'prostate cancer' overlaps 'prostate',
         'prostate' is a nested annotation to remove.
         'prostate' is a left token.
@@ -89,7 +91,7 @@ class AnnotationTest(unittest.TestCase):
         self.assertTrue(self.prostate_annot not in annots_filt)
         self.assertEqual(1, len(annots_filt))
 
-    def test_rm_nested_terms_keep_ancestors(self):
+    def test_rm_nested_ents_keep_ancestors(self):
         """Check ancestors are kept when True."""
         annots_filt = rm_nested_annots(self.annots, keep_ancestors=True)
         self.assertEqual(2, len(annots_filt))
@@ -145,11 +147,11 @@ class AnnotationTest(unittest.TestCase):
         """New annotation has the expected attribute values."""
         text = "Insuffisance Ventriculaire  Gauche"
         gauche_node, gauche_el = get_gauche_el_in_ivg()
-        term = Term("Insuffisance Cardiaque Gauche", "I50.1")
-        gauche_node.add_keyword(term)
+        ent = Entity("Insuffisance Cardiaque Gauche", "I50.1")
+        gauche_node.add_keyword(ent)
         annot: Annotation = create_annot(last_el=gauche_el)
         self.assertEqual(3, len(annot._tokens))
-        self.assertTrue(term in annot.keywords)
+        self.assertTrue(ent in annot.keywords)
         self.assertEqual(0, annot.start)
         self.assertEqual(34, annot.end)
         self.assertEqual("Insuffisance Ventriculaire Gauche", annot.label)
@@ -159,8 +161,8 @@ class AnnotationTest(unittest.TestCase):
     def test_to_dict(self):
         """Check attribute values."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
-        term = Term("Insuffisance Cardiaque Gauche", "I50.1")
-        gauche_node.add_keyword(term)
+        ent = Entity("Insuffisance Cardiaque Gauche", "I50.1")
+        gauche_node.add_keyword(ent)
         annot: Annotation = create_annot(last_el=gauche_el)
         dic = annot.to_dict(text="Another text to check substring is working")
         self.assertEqual(dic["start"], 0)
@@ -184,7 +186,7 @@ class AnnotationTest(unittest.TestCase):
         self.assertEqual(3, len(tokens_states))
 
     def test_node_not_in_final_state(self):
-        """Annotation can be created iff a term is available
+        """Annotation can be created iff a ent is available
         (= node is a final state). Otherwise an exception is raised."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
         with (self.assertRaises(ValueError)):

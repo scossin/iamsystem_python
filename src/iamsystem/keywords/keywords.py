@@ -1,47 +1,46 @@
 """ Keywords implementation."""
+from dataclasses import asdict
+from dataclasses import dataclass
+
+from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 
 
+# I considered TypedDict to store keywords but type checking is complicated.
+# See https://dev.to/meeshkan/typeddict-vs-dataclasses-in-python-epic-typing-battle-onb # noqa
+
+
+@dataclass
 class Keyword(IKeyword):
-    """Base class to search keywords in a document."""
+    """Base class to search keywords in a document.
 
-    def __init__(self, label: str):
-        """Create a keyword.
+    Args:
+        label (str): The string to search.
+    """
 
-        :param label: a string to search in a document (ex: "heart failure").
-        """
-        self.label = label
+    label: str
 
-    def get_kb_id(self):
-        """Get the knowledge base id of this keyword.
-        It returns the label if this method is not overriden in the subclass.
-
-        :return: A unique identifier.
-        """
-        return self.label
+    def asdict(self):
+        """Returns the fields of the dataclass instance."""
+        return asdict(
+            self,
+        )
 
     def __str__(self):
-        """Return the only attribute."""
-        return self.label
+        """Return a string representation."""
+        return f"{self.label}"
 
 
-class Term(Keyword):
-    """This class represents a term in a particular domain where each
-    keyword is associated to a unique identifier called a code."""
+@dataclass
+class Entity(Keyword, IEntity):
+    """An entity of a knowledge base.
 
-    def __init__(self, label: str, code: str):
-        """Create a term.
+    Args:
+        kb_id (str): The entity id in the knowledge base.
+    """
 
-        :param label: a string to search in a document (ex: "heart failure").
-        :param code: the code associated to this keyword.
-        """
-        super().__init__(label)
-        self.code = code
-
-    def get_kb_id(self):
-        """returns the code of this term."""
-        return self.code
+    kb_id: str
 
     def __str__(self):
         """An opinionated string representation."""
-        return f"{self.label} ({self.code})"
+        return f"{self.label} ({self.kb_id})"
