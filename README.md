@@ -52,7 +52,7 @@ The formalization of the algorithm is available in this [paper](https://ceur-ws.
 
 The algorithm was initially developed in Java (https://github.com/scossin/IAMsystem).
 It has participated in several semantic annotation competitions in the medical field where it has obtained satisfactory results,
-for example by obtaining the best results in the [Codiesp shared task]([https://temu.bsc.es/codiesp/index.php/2019/09/19/awards/).
+for example by obtaining the best results in the [Codiesp shared task](https://temu.bsc.es/codiesp/index.php/2019/09/19/awards/).
 A dictionary-based model can achieve close performance to a transformer-based model when the task is simple or when the training set is small.
 Its main advantage is its speed, which allows a baseline to be generated quickly.
 
