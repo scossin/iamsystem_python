@@ -18,13 +18,14 @@ class IBaseMatcher(Protocol):
     """Declare the API methods expected by a IAMsystem matcher."""
 
     def annot_text(self, text: str) -> List[Annotation[TokenT]]:
-        """Annotate a document (internal tokenization)."""
+        """Annotate a document with the matcher's tokenizer."""
         raise NotImplementedError
 
     def annot_tokens(
         self, tokens: Sequence[TokenT]
     ) -> List[Annotation[TokenT]]:
-        """Annotate a sequence of tokens (external tokenization)."""
+        """Annotate a document passing its tokens produced by an external
+        tokenizer."""
         raise NotImplementedError
 
 
@@ -37,6 +38,6 @@ class IMatcher(
     IBaseMatcher,
     Protocol,
 ):
-    """Declare the matcher API methods."""
+    """Declare the API of the concrete matcher implementation."""
 
     pass

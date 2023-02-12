@@ -40,7 +40,7 @@ class MatcherDocTest(unittest.TestCase):
             keywords=["acute respiratory distress syndrome", "diarrrhea"]
         )
         annots = matcher.annot_text(
-            text="Pt c/o Acute Respiratory Distress " "Syndrome and diarrrhea"
+            text="Pt c/o Acute Respiratory Distress Syndrome and diarrrhea"
         )
         for annot in annots:
             print(annot)
@@ -641,6 +641,7 @@ class FuzzyDocTest(unittest.TestCase):
         annots = matcher.annot_text(text="Absence de poils.")
         for annot in annots:
             print(annot)
+        # poils	11 16	poids
         matcher = Matcher.build(
             keywords=["poids"],
             spellwise=[
@@ -652,7 +653,6 @@ class FuzzyDocTest(unittest.TestCase):
             ],
             string_distance_ignored_w=["poils"],
         )
-        # poils	11 16	poids
         annots_2 = matcher.annot_text(text="Absence de poils.")
         for annot in annots_2:
             print(annot)  # 0

@@ -20,6 +20,14 @@ Matcher build
    :members: build
    :noindex:
 
+Span
+----
+.. autoclass:: iamsystem.matcher.annotation.Span
+   :inherited-members:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Annotation
 ----------
 .. autoclass:: iamsystem.Annotation
@@ -39,7 +47,6 @@ replace_annots
 Keyword and subclasses
 ----------------------
 
-
 IKeyword
 ^^^^^^^^
 .. autoclass:: iamsystem.IKeyword
@@ -55,15 +62,12 @@ IEntity
    :show-inheritance:
 
 
-
 Keyword
 ^^^^^^^
 .. autoclass:: iamsystem.Keyword
    :members:
    :undoc-members:
    :show-inheritance:
-
-   .. automethod:: __init__
 
 Entity
 ^^^^^^
@@ -72,22 +76,20 @@ Entity
    :undoc-members:
    :show-inheritance:
 
-   .. automethod:: __init__
-
 Terminology
 ^^^^^^^^^^^
 .. autoclass:: iamsystem.Terminology
    :members:
    :show-inheritance:
 
-
 Tokenization
 -------
 
 IOffsets
-^^^^^
+^^^^^^^^
 .. autoclass:: iamsystem.IOffsets
    :show-inheritance:
+   :members:
 
 Offsets
 ^^^^^^^
@@ -99,6 +101,7 @@ Offsets
 IToken
 ^^^^^^
 .. autoclass:: iamsystem.IToken
+   :members:
    :show-inheritance:
 
 Token
@@ -242,6 +245,9 @@ SpellWiseWrapper
    :members:
    :undoc-members:
    :show-inheritance:
+
+   .. automethod:: __init__
+
 
 ESpellWiseAlgo
 """"""""""""""

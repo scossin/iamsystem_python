@@ -12,13 +12,10 @@ from iamsystem.keywords.api import IKeyword
 
 @dataclass
 class Keyword(IKeyword):
-    """Base class to search keywords in a document.
-
-    Args:
-        label (str): The string to search.
-    """
+    """Base class to search keywords in a document."""
 
     label: str
+    """ The string to search in a document (ex: 'heart failure')."""
 
     def asdict(self):
         """Returns the fields of the dataclass instance."""
@@ -33,13 +30,11 @@ class Keyword(IKeyword):
 
 @dataclass
 class Entity(Keyword, IEntity):
-    """An entity of a knowledge base.
-
-    Args:
-        kb_id (str): The entity id in the knowledge base.
-    """
+    """A class that represents an entity of a knowledge base."""
 
     kb_id: str
+    """ The entity id in the knowledge base.
+     Ex: https://www.wikidata.org/wiki/Q304330 """
 
     def __str__(self):
         """An opinionated string representation."""

@@ -335,7 +335,7 @@ class Matcher(IMatcher[TokenT]):
             A :class:`~iamsystem.ITokenizer` instance responsible for
             tokenizing and normalizing.
         :param stopwords: provide a :class:`~iamsystem.IStopwords`.
-            If None, default to :class:`~iamsystem.Stopwords`.
+            If None, default to :class:`~iamsystem.NoStopwords`.
         :param w: Window. How much discontinuous keyword's tokens
             to find can be. By default, w=1 means the sequence must be
             continuous. w=2 means each token can be separated by another token.
@@ -343,18 +343,18 @@ class Matcher(IMatcher[TokenT]):
             matter in the matching strategy.
         :param negative: every unigram not in the keywords is a stopword.
             Default to False. If stopwords are also passed, they will be
-            removed in the unigrams and so still be stopwords.
+            removed from keywords' tokens and so still be stopwords.
         :param remove_nested_annots: if two annotations overlap,
-            remove the shorter one. Default to True
+            remove the shorter one. Default to True.
         :param string_distance_ignored_w: words ignored by string distance
             algorithms to avoid false positives matched.
         :param abbreviations: an iterable of tuples (short_form, long_form).
         :param spellwise: an iterable of :class:`~iamsystem.SpellWiseWrapper`
             init parameters. if 'string_distance_ignored_w' is set, these words
-            parameter will be passed.
+            are passed to SpellWiseWrapper init function.
         :param simstring: an iterable of :class:`~iamsystem.SimStringWrapper`
             init parameters. if 'string_distance_ignored_w' is set, these words
-            parameter will be passed.
+            are passed to SimStringWrapper init function.
         :param normalizers: an iterable of :class:`~iamsystem.WordNormalizer`
             init parameters.
         :param fuzzy_regex: an iterable of :class:`~iamsystem.FuzzyRegex`

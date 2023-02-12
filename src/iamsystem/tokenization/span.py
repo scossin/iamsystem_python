@@ -23,12 +23,17 @@ class Span(ISpan[TokenT], IToken):
 
         :param tokens: a sequence of TokenT, a generic type that implements
             :class:`~iamsystem.IToken` protocol.
+
         """
         self._tokens = tokens
         self.start = get_min_start_offset(self._tokens)
+        """ The start offset of the first token."""
         self.end = get_max_end_offset(self._tokens)
+        """ The end offset of the last token."""
         self.label = concat_tokens_label(self._tokens)
+        """ The concatenation of each token's label."""
         self.norm_label = concat_tokens_norm_label(self._tokens)
+        """ The concatenation of each token's norm_label."""
 
     @property
     def tokens(self) -> Sequence[TokenT]:
