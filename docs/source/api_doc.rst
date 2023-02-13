@@ -320,6 +320,14 @@ IAMsystemSpacy
 
    .. automethod:: __init__
 
+IAMsystemBuildSpacy
+^^^^^^^^^^^^^^^^^^^
+.. autoclass:: iamsystem.spacy.IAMsystemBuildSpacy
+   :members:
+   :show-inheritance:
+
+   .. automethod:: __init__
+
 TokenSpacyAdapter
 ^^^^^^^^^^^^^^^^^
 .. autoclass:: iamsystem.spacy.TokenSpacyAdapter

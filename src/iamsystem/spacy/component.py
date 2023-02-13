@@ -179,17 +179,16 @@ class IAMsystemBuildSpacy(BaseCustomComp):
             span instance.
         :param serialized_kw: a way to import serialized keywords.
             A dictionary containing 3 fields:
+
             - 'module': module name of the class to import. ex: 'iamsystem'.
             - 'class_name': the Keyword class to import.
-            - 'kw': an iterable of dict created with the asdict()
-                function.
-            If None, keywords are expected in 'build_params'. You will need
-            a registered function to import the keywords.
+            - 'kw': an iterable of dict created with the asdict() function.
+            If None, keywords are expected in 'build_params'.
         :param norm_fun: a function that normalizes the 'norm_' attribute
             of a spaCy token, attribute used by iamsystem. Default to lower
             case and remove accents.
-        :param build_params: `~iamsystem.Matcher.build` parameters, the spacy
-            tokenizer will be used whatever the tokenizer value.
+        :param build_params: :py:meth:`~iamsystem.Matcher.build` parameters,
+            the spacy tokenizer will be used whatever the tokenizer value.
         """
 
         super().__init__(

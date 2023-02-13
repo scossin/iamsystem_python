@@ -115,6 +115,7 @@ class MatcherDocTest(unittest.TestCase):
         # end_test_exact_match_custom_keyword
         self.assertEqual(
             "acute respiratory distress syndrome	7 42	https://www.wikidata.org/wiki/Q344873",  # noqa
+            # noqa
             str(annots[0]),
         )
         self.assertEqual("diarrrhea	47 56	diarrrhea (R19.7)", str(annots[1]))
@@ -869,6 +870,43 @@ class SpacyDocTest(unittest.TestCase):
             print(span._.iamsystem)
         # ic gauche	0 9	Insuffisance Cardiaque Gauche (I50.1)
         # end_test_component
+
+
+class SpacyBuildTest(unittest.TestCase):
+    def test_spacy_readme_example(self):
+        """Spacy with readme example."""
+        # start_test_spacy_readme_example
+        from spacy.lang.fr import French
+
+        from iamsystem.spacy.component import IAMsystemBuildSpacy  # noqa
+
+        nlp = French()
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="iamsystem",
+            last=True,
+            config={
+                "build_params": {
+                    "keywords": [
+                        "North America",
+                        "South America",
+                    ],
+                    "abbreviations": [("amer", "America")],
+                    "stopwords": ["and"],
+                    "w": 2,
+                    "remove_nested_annots": True,
+                    "spellwise": [dict(max_distance=1, measure="Levenshtein")],
+                },
+            },
+        )
+        doc = nlp("Northh and South Amer.")
+        self.assertEqual(2, len(doc.spans["iamsystem"]))
+        spans = doc.spans["iamsystem"]
+        for span in spans:
+            print(span._.iamsystem)
+        # Northh Amer	0 6;17 21	North America
+        # South Amer	11 21	South America
+        # end_test_spacy_readme_example
 
 
 if __name__ == "__main__":

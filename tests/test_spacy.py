@@ -111,10 +111,10 @@ class SpacyCompTest(unittest.TestCase):
         doc = nlp("ic: contraction du ventricule gauche faible")
         self.assertEqual(2, len(doc.spans["iamsystem"]))
 
-    def test_matcher(self):
-        """Change window and remove_nested default.
-        Two annots: 'ic' and 'ic cardiaque'.
-        """
+
+class IAMsystemBuildSpacyTest(unittest.TestCase):
+    def test_matcher_keywords_registered(self):
+        """Test it works with a registered function"""
         nlp = French()
         nlp.add_pipe(
             "iamsystem_matcher",
@@ -124,19 +124,13 @@ class SpacyCompTest(unittest.TestCase):
                 "build_params": {
                     "keywords": {"@misc": "umls_ents.v1"},
                 }
-                # "stopwords": {"@misc": "stopwords_spacy.v1"},
-                # "fuzzy_algos": {"@misc": "fuzzy_algos_short_notes.v1"},
-                # "w": 4,
-                # "remove_nested_annots": False,
             },
         )
         doc = nlp("insuffisance cardiaque gauche")
         self.assertEqual(1, len(doc.spans["iamsystem"]))
 
     def test_serializable_json(self):
-        """Change window and remove_nested default.
-        Two annots: 'ic' and 'ic cardiaque'.
-        """
+        """Check no JSON serializable error"""
         nlp = French()
         nlp.add_pipe(
             "iamsystem_matcher",
@@ -155,7 +149,7 @@ class SpacyCompTest(unittest.TestCase):
         self.assertEqual(1, len(doc.spans["iamsystem"]))
 
     def test_all_params(self):
-        """Test detection adding all the parameters."""
+        """Test it words with all the parameters."""
         nlp = French()
         nlp.add_pipe(
             "iamsystem_matcher",
