@@ -6,7 +6,6 @@ import warnings
 
 from collections import defaultdict
 from typing import Any
-from typing import Callable
 from typing import Collection
 from typing import Dict
 from typing import Iterable
@@ -55,9 +54,6 @@ from iamsystem.tokenization.tokenize import tokenize_and_order_decorator
 from iamsystem.tree.nodes import EMPTY_NODE
 from iamsystem.tree.nodes import INode
 from iamsystem.tree.trie import Trie
-
-
-filter_fun = Callable[[Annotation[TokenT]], Annotation[TokenT]]
 
 
 class Matcher(IMatcher[TokenT]):
@@ -365,16 +361,14 @@ class Matcher(IMatcher[TokenT]):
         if tokenizer is None:
             tokenizer = french_tokenizer()
 
+        # Decorate tokenize function to order alphabetically
         if order_tokens:
             tokenizer.tokenize = tokenize_and_order_decorator(
                 tokenizer.tokenize
             )
 
         # Start building and configuring the matcher
-
         matcher = Matcher(tokenizer=tokenizer)
-        # Decorate tokenize function to order alphabetically
-        matcher.order_tokens = order_tokens
 
         # Configure stopwords
         if isinstance(stopwords, Iterable):
@@ -401,9 +395,7 @@ class Matcher(IMatcher[TokenT]):
         def _add_algo_in_cache_closure(
             cache: CacheFuzzyAlgos, matcher: Matcher
         ):
-            """Internal build function to add cache_fuzzy algorithm to the
-            list of fuzzy algorithms the first time an algorithm is added in
-            cache."""
+            """Internal function to add cache_fuzzy algorithm to cache"""
 
             def add_algo_in_cache(algo=INormLabelAlgo):
                 """Add an algorithm in cache."""

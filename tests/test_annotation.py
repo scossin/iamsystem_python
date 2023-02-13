@@ -4,9 +4,9 @@ from iamsystem.keywords.keywords import Entity
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import create_annot
 from iamsystem.matcher.annotation import is_ancestor_annot_of
+from iamsystem.matcher.annotation import linkedlist_to_list
 from iamsystem.matcher.annotation import rm_nested_annots
 from iamsystem.matcher.annotation import sort_annot
-from iamsystem.matcher.annotation import tokens_states_to_list
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.span import is_shorter_span_of
 from tests.utils_detector import get_gauche_el_in_ivg
@@ -182,7 +182,7 @@ class AnnotationTest(unittest.TestCase):
     def test_tokens_states_to_list(self):
         """Linked list to list returns the right length."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
-        tokens_states = tokens_states_to_list(last_el=gauche_el)
+        tokens_states = linkedlist_to_list(last_el=gauche_el)
         self.assertEqual(3, len(tokens_states))
 
     def test_node_not_in_final_state(self):

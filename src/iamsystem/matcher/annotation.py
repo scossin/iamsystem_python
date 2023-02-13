@@ -24,12 +24,12 @@ class Annotation(Span[TokenT]):
     """Ouput class of :class:`~iamsystem.Matcher` storing information on the
     detected entities."""
 
-    def __init__(self, tokens_states: Sequence[TransitionState[TokenT]]):
-        tokens: List[TokenT] = [tok_state.token for tok_state in tokens_states]
+    def __init__(self, trans_states: Sequence[TransitionState[TokenT]]):
+        tokens: List[TokenT] = [t.token for t in trans_states]
         tokens.sort(key=functools.cmp_to_key(min_start_or_end))
         super().__init__(tokens)
-        self.algos = [token_state.algos for token_state in tokens_states]
-        self._last_state = tokens_states[-1].node
+        self.algos = [t.algos for t in trans_states]
+        self._last_state = trans_states[-1].node
 
     @property
     def keywords(self) -> Sequence[IKeyword]:
@@ -184,21 +184,22 @@ def create_annot(last_el: TransitionState) -> Annotation:
     """last_el contains a sequence of tokens in text and a final state (a
     matcher keyword)."""
     if not last_el.node.is_a_final_state():
-        raise ValueError("LinkedToken is not a final state.")
-    tokens_states = tokens_states_to_list(last_el)
-    annot = Annotation(tokens_states=tokens_states)
+        raise ValueError("Last element is not a final state.")
+    trans_states = linkedlist_to_list(last_el)
+    annot = Annotation(trans_states=trans_states)
     return annot
 
 
-def tokens_states_to_list(last_el: TransitionState) -> List[TransitionState]:
+def linkedlist_to_list(last_el: TransitionState) -> List[TransitionState]:
     """Convert a linked list to a list."""
-    tokens_states: List[TransitionState] = [last_el]
+    trans_states: List[TransitionState] = [last_el]
     parent = last_el.parent
+    # it stops when reaching the initial state.
     while isinstance(parent, TransitionState):
-        tokens_states.append(parent)
+        trans_states.append(parent)
         parent = parent.parent
-    tokens_states.reverse()
-    return tokens_states
+    trans_states.reverse()
+    return trans_states
 
 
 def replace_annots(
