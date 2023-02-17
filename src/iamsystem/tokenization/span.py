@@ -21,8 +21,8 @@ class Span(ISpan[TokenT], IToken):
     def __init__(self, tokens: Sequence[TokenT]):
         """Create a Span.
 
-        :param tokens: a sequence of TokenT, a generic type that implements
-            :class:`~iamsystem.IToken` protocol.
+        :param tokens: an ordered sequence of TokenT, a generic type that
+            implements :class:`~iamsystem.IToken` protocol.
 
         """
         self._tokens = tokens
@@ -33,7 +33,10 @@ class Span(ISpan[TokenT], IToken):
         self.label = concat_tokens_label(self._tokens)
         """ The concatenation of each token's label."""
         self.norm_label = concat_tokens_norm_label(self._tokens)
-        """ The concatenation of each token's norm_label."""
+        """ The index of the first token within the parent document."""
+        self.start_i = tokens[0].i
+        """ The index of the last token within the parent document."""
+        self.end_i = tokens[-1].i
 
     @property
     def tokens(self) -> Sequence[TokenT]:

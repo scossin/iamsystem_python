@@ -502,8 +502,10 @@ def detect(
     w_states[w] = [start_state]
     # different from i for a stopword-independent window size.
     count_not_stopword = 0
+    stop_tokens: List[TokenT] = []
     for i, token in enumerate(tokens):
         if stopwords.is_token_a_stopword(token):
+            stop_tokens.append(token)
             continue
         count_not_stopword += 1
         syns_algos: Iterable[SynAlgos] = syns_provider.get_synonyms(
@@ -526,7 +528,9 @@ def detect(
                     )
                     tokens_states.append(token_state)
                     if new_state.is_a_final_state():
-                        annot = create_annot(last_el=token_state)
+                        annot = create_annot(
+                            last_el=token_state, stop_tokens=stop_tokens
+                        )
                         annots.append(annot)
         # function 'count_not_stopword % w' has range [0 ; w-1]
         w_states[count_not_stopword % w].clear()

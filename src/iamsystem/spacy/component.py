@@ -74,8 +74,8 @@ class BaseCustomComp(ABC):
         )
         spacy_spans = []
         for ann in anns:
-            start_i = ann.tokens[0].i
-            end_i = ann.tokens[-1].i
+            start_i = ann.start_i
+            end_i = ann.end_i
             # 'A label to attach to the span, e.g. for named entities.'
             labels = [str(keyword) for keyword in ann.keywords]
             label = ";".join(labels)

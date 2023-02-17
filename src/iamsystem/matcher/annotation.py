@@ -11,6 +11,7 @@ from typing import Tuple
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.util import TransitionState
+from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.span import Span
 from iamsystem.tokenization.span import is_shorter_span_of
@@ -18,18 +19,48 @@ from iamsystem.tokenization.util import itoken_to_dict
 from iamsystem.tokenization.util import min_start_or_end
 from iamsystem.tokenization.util import offsets_overlap
 from iamsystem.tokenization.util import replace_offsets_by_new_str
+from iamsystem.tree.nodes import INode
 
 
 class Annotation(Span[TokenT]):
     """Ouput class of :class:`~iamsystem.Matcher` storing information on the
     detected entities."""
 
-    def __init__(self, trans_states: Sequence[TransitionState[TokenT]]):
-        tokens: List[TokenT] = [t.token for t in trans_states]
-        tokens.sort(key=functools.cmp_to_key(min_start_or_end))
+    def __init__(
+        self,
+        tokens: List[TokenT],
+        algos: List[List[str]],
+        last_state: INode,
+        stop_tokens: List[TokenT],
+    ):
+        """Create an annotation.
+
+        :param tokens: a sequence of TokenT, a generic type that implements
+            :class:`~iamsystem.IToken` protocol.
+        :param algos: the list of fuzzy algorithms that matched the tokens.
+            One to several algorithms per token.
+        :param last_state: a final state of iamsystem algorithm containing the
+            keyword that matched this sequence of tokens.
+        :param stop_tokens: the list of stopwords tokens inside the document.
+        """
         super().__init__(tokens)
-        self.algos = [t.algos for t in trans_states]
-        self._last_state = trans_states[-1].node
+        self.algos = algos
+        self._last_state = last_state
+        self._stop_tokens = stop_tokens
+
+    @property
+    def stop_tokens(self) -> List[IToken]:
+        """The list of stopwords tokens inside the annotation detected by
+        the Matcher stopwords instance."""
+        # Filter the stopwords tokens of a document: keep only those inside the
+        # annotation. Note also that I don't filter before the
+        stop_tokens_in_annot = [
+            token
+            for token in self._stop_tokens
+            if self.start_i < token.i < self.end_i
+        ]
+        stop_tokens_in_annot.sort(key=lambda token: token.i)
+        return stop_tokens_in_annot
 
     @property
     def keywords(self) -> Sequence[IKeyword]:
@@ -40,7 +71,7 @@ class Annotation(Span[TokenT]):
     def get_tokens_algos(self) -> Iterable[Tuple[TokenT, List[str]]]:
         """Get each token and the list of fuzzy algorithms that matched it.
 
-        :return: an itera  of tuples (token0, ['algo1',...]) where token0 is
+        :return: an iterable of tuples (token0, ['algo1',...]) where token0 is
             a token and ['algo1',...] a list of fuzzy algorithms.
         """
         return zip(self._tokens, self.algos)
@@ -180,13 +211,29 @@ def rm_nested_annots(annots: List[Annotation], keep_ancestors=False):
     return annots_filt
 
 
-def create_annot(last_el: TransitionState) -> Annotation:
+def create_annot(
+    last_el: TransitionState, stop_tokens: List[TokenT]
+) -> Annotation:
     """last_el contains a sequence of tokens in text and a final state (a
     matcher keyword)."""
     if not last_el.node.is_a_final_state():
         raise ValueError("Last element is not a final state.")
     trans_states = linkedlist_to_list(last_el)
-    annot = Annotation(trans_states=trans_states)
+    last_state = trans_states[-1].node
+    # order by token indice. Note that last node is not last anymore.
+    trans_states.sort(key=lambda x: x.token.i)
+    tokens: List[TokenT] = [t.token for t in trans_states]
+    algos = [t.algos for t in trans_states]
+    # Note that the annotations are created during iterating over the
+    # document, when order of tokens is reversed in the Matcher, the list of
+    # stopwords can be incomplete. So the full stopwords list is passed
+    # to each annotation, stop_words inside each annotation is filtered later.
+    annot = Annotation(
+        tokens=tokens,
+        algos=algos,
+        last_state=last_state,
+        stop_tokens=stop_tokens,
+    )
     return annot
 
 
