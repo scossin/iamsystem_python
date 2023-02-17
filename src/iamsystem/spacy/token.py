@@ -24,5 +24,6 @@ class TokenSpacyAdapter(IToken):
         self.start = self.spacy_token.idx
         self.end = self.start + len(self.spacy_token.text)
         self.label = self.spacy_token.text
+        self.i = self.spacy_token.i
         self.normalize = norm_fun
         self.norm_label = self.normalize(self.spacy_token.norm_)

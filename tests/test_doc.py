@@ -158,11 +158,11 @@ class TokenizerDocTest(unittest.TestCase):
         tokens = tokenizer.tokenize("SARS-CoV+")
         for token in tokens:
             print(token)
-        # Token(label='SARS', norm_label='sars', start=0, end=4)
-        # Token(label='CoV', norm_label='cov', start=5, end=8)
+        # Token(label='SARS', norm_label='sars', start=0, end=4, i=0)
+        # Token(label='CoV', norm_label='cov', start=5, end=8, i=1)
         # end_test_tokenizer
         self.assertEqual(
-            "Token(label='SARS', norm_label='sars', start=0, end=4)",
+            "Token(label='SARS', norm_label='sars', start=0, end=4, i=0)",
             str(tokens[0]),
         )
 
@@ -177,12 +177,13 @@ class TokenizerDocTest(unittest.TestCase):
         tokens = tokenizer.tokenize("SARS-CoV+")
         for token in tokens:
             print(token)
-        # Token(label='SARS', norm_label='sars', start=0, end=4)
-        # Token(label='CoV', norm_label='cov', start=5, end=8)
-        # Token(label='+', norm_label='+', start=8, end=9)
+        # Token(label='SARS', norm_label='sars', start=0, end=4, i=0)
+        # Token(label='CoV', norm_label='cov', start=5, end=8, i=1)
+        # Token(label='+', norm_label='+', start=8, end=9, i=2)
         # end_test_custom_tokenizer
         self.assertEqual(
-            "Token(label='+', norm_label='+', start=8, end=9)", str(tokens[2])
+            "Token(label='+', norm_label='+', start=8, end=9, i=2)",
+            str(tokens[2]),
         )
 
     def test_matcher_with_custom_tokenizer(self):

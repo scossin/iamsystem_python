@@ -74,8 +74,9 @@ class TokenizerImp(ITokenizer[Token]):
                 norm_label=self.normalize(
                     text[offset.start : offset.end]  # noqa
                 ),
+                i=i,
             )
-            for offset in offsets
+            for i, offset in enumerate(offsets)
         ]
         return tokens
 

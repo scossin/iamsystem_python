@@ -44,18 +44,18 @@ class StopwordsTest(unittest.TestCase):
     def test_accent(self):
         """Accents are not removed."""
         self.stopwords.add(words=["à"])
-        token_a_accent = Token(0, 1, label="à", norm_label="a")
+        token_a_accent = Token(0, 1, label="à", norm_label="a", i=0)
         self.assertTrue(
             self.stopwords.is_token_a_stopword(token=token_a_accent)
         )
-        token_a = Token(0, 1, label="a", norm_label="a")
+        token_a = Token(0, 1, label="a", norm_label="a", i=0)
         self.assertTrue(not self.stopwords.is_token_a_stopword(token=token_a))
 
 
 class NegativeStopwordsTest(unittest.TestCase):
     def setUp(self) -> None:
         self.stopwords = NegativeStopwords()
-        self.token = Token(0, 1, label="patient", norm_label="patient")
+        self.token = Token(0, 1, label="patient", norm_label="patient", i=0)
 
     def test_is_token_a_stopword(self):
         """It returns true because it's not a word to keep."""
@@ -87,7 +87,7 @@ class NegativeStopwordsTest(unittest.TestCase):
 class NoStopwordsTest(unittest.TestCase):
     def setUp(self) -> None:
         self.stopwords = NoStopwords()
-        self.token_du = Token(0, 2, label="du", norm_label="du")
+        self.token_du = Token(0, 2, label="du", norm_label="du", i=0)
 
     def test_is_stopword(self):
         """It returns always False."""

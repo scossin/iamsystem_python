@@ -31,6 +31,8 @@ class IToken(IOffsets, Protocol):
     norm_label: str
     """ the normalized label used by iamsystem's algorithm to perform
     entity linking."""
+    i: int
+    """ The index of the token within the parent document. """
 
 
 # a generic token type
