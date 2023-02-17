@@ -3,7 +3,6 @@ from typing import Sequence
 
 from iamsystem.brat.util import merge_offsets_and_get_brat_format
 from iamsystem.tokenization.api import ISpan
-from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.util import concat_tokens_label
 from iamsystem.tokenization.util import concat_tokens_norm_label
@@ -13,10 +12,8 @@ from iamsystem.tokenization.util import get_span_seq_id
 from iamsystem.tokenization.util import offsets_overlap
 
 
-class Span(ISpan[TokenT], IToken):
-    """A class that represents a sequence of tokens in a document.
-    A sequence of tokens is also seen as a single Token,
-    thus it implements IToken."""
+class Span(ISpan[TokenT]):
+    """A class that represents a sequence of tokens in a document."""
 
     def __init__(self, tokens: Sequence[TokenT]):
         """Create a Span.
