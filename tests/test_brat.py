@@ -233,6 +233,16 @@ class BratDocumentTest(unittest.TestCase):
             brat_notes=brat_document.get_notes(), write=lambda x: None
         )
 
+    def test_similar_stopwords_window_strategy(self):
+        """Test stopwords and window strategies give the same output."""
+        matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=1
+        )
+        annots_stop = matcher.annot_text(text="cancer de la prostate")
+        matcher = Matcher.build(keywords=["cancer prostate"], w=3)
+        annots_w = matcher.annot_text(text="cancer de la prostate")
+        self.assertEqual(annots_stop[0].to_string(), annots_w[0].to_string())
+
 
 if __name__ == "__main__":
     unittest.main()
