@@ -8,21 +8,35 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 
+from typing_extensions import Protocol
+
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.util import TransitionState
-from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.span import Span
 from iamsystem.tokenization.span import is_shorter_span_of
-from iamsystem.tokenization.token import Offsets
+from iamsystem.tokenization.util import group_continuous_seq
 from iamsystem.tokenization.util import itoken_to_dict
 from iamsystem.tokenization.util import min_start_or_end
+from iamsystem.tokenization.util import multiple_seq_to_offsets
 from iamsystem.tokenization.util import offsets_overlap
+from iamsystem.tokenization.util import remove_trailing_stopwords
 from iamsystem.tokenization.util import replace_offsets_by_new_str
 from iamsystem.tree.nodes import INode
+
+
+class IBratFormatter(Protocol):
+    """A BratFormatter takes an annotation and decides how to annotate a
+    document with the (discontinuous) sequence of tokens,
+    thus how to generate a Brat format."""
+
+    def get_text_and_offsets(self, annot: "Annotation") -> Tuple[str, str]:
+        """Return text (document substring) and annotation's offsets in the
+        Brat format"""
+        raise NotImplementedError
 
 
 class Annotation(Span[TokenT]):
@@ -50,6 +64,35 @@ class Annotation(Span[TokenT]):
         self.algos = algos
         self._last_state = last_state
         self._stop_tokens = stop_tokens
+        self._brat_formatter: IBratFormatter = BratTokenOnly()
+
+    @property
+    def brat_formatter(self) -> IBratFormatter:
+        """Return the Brat formatter."""
+        return self._brat_formatter
+
+    @property
+    def label(self):
+        """The tokens_label."""
+        return self.tokens_label
+
+    def set_brat_formatter(self, brat_formatter: IBratFormatter):
+        """Change the Brat formatter to produce a different Brat annotation"""
+        self._brat_formatter = brat_formatter
+
+    def _keywords_to_string(self):
+        """Merge the keywords."""
+        keywords_str = [str(keyword) for keyword in self.keywords]
+        return ";".join(keywords_str)
+
+    def _get_norm_label_algos_str(self):
+        """Get a string representation of tokens and algorithms."""
+        return ";".join(
+            [
+                f"{token.norm_label}({','.join(algos)})"
+                for token, algos in self.get_tokens_algos()
+            ]
+        )
 
     @property
     def stop_tokens(self) -> List[IToken]:
@@ -64,19 +107,6 @@ class Annotation(Span[TokenT]):
         ]
         stop_tokens_in_annot.sort(key=lambda token: token.i)
         return stop_tokens_in_annot
-
-    def to_brat_format(self) -> str:
-        """Get Brat offsets format. See https://brat.nlplab.org/standoff.html
-        'The start-offset is the index of the first character of the annotated
-        span in the text (".txt" file),
-        i.e. the number of characters in the document preceding it.
-        The end-offset is the index of the first character
-        after the annotated span.'
-
-        :return: a string format of tokens' offsets
-        """
-        offsets_seq_merged = merge_offsets(annot=self)
-        return get_brat_format_seq(offsets_seq_merged)
 
     @property
     def keywords(self) -> Sequence[IKeyword]:
@@ -104,7 +134,7 @@ class Annotation(Span[TokenT]):
             "end": self.end,
             "offsets": self.to_brat_format(),
             "label": self.label,
-            "norm_label": self.norm_label,
+            "norm_label": self.tokens_norm_label,
             "tokens": [itoken_to_dict(token) for token in self.tokens],
             "algos": self.algos,
             "kb_ids": [
@@ -119,9 +149,12 @@ class Annotation(Span[TokenT]):
             dic["substring"] = text_substring
         return dic
 
+    def __str__(self) -> str:
+        """Annotation string representation with Brat offsets format."""
+        return f"{self.to_string()}"
+
     def to_string(self, text: str = None, debug=False) -> str:
         """Get a default string representation of this object.
-
         :param text: the document from which this annotation comes from.
          Default to None. If set, add the document substring: text[
          first-token-start-offset : last-token-end-offset].
@@ -131,7 +164,10 @@ class Annotation(Span[TokenT]):
         :return: a concatenated string of 'keywords'\t'start'
          'end'\t'substring'?\t'debug_info'?
         """
-        columns = self._to_list()
+        text_span, offsets = self._brat_formatter.get_text_and_offsets(
+            annot=self
+        )
+        columns = [text_span, offsets, self._keywords_to_string()]
         if text is not None:
             text_substring = text[self.start : self.end]  # noqa
             columns.append(text_substring)
@@ -139,33 +175,6 @@ class Annotation(Span[TokenT]):
             token_annots_str = self._get_norm_label_algos_str()
             columns.append(token_annots_str)
         return "\t".join(columns)
-
-    def _get_norm_label_algos_str(self):
-        """Get a string representation of tokens and algorithms."""
-        return ";".join(
-            [
-                f"{token.norm_label}({','.join(algos)})"
-                for token, algos in self.get_tokens_algos()
-            ]
-        )
-
-    def _to_list(self) -> List[Any]:
-        """A list of attributes."""
-        columns = [
-            self.label,
-            self.to_brat_format(),
-            self._keywords_to_string(),
-        ]
-        return columns
-
-    def _keywords_to_string(self):
-        """Merge the keywords."""
-        keywords_str = [str(keyword) for keyword in self.keywords]
-        return ";".join(keywords_str)
-
-    def __str__(self) -> str:
-        """Annotation string representation with Brat offsets format."""
-        return f"{self.to_string()}"
 
 
 def is_ancestor_annot_of(a: Annotation, b: Annotation) -> bool:
@@ -286,39 +295,59 @@ def replace_annots(
     )
 
 
-def merge_offsets(annot: Annotation) -> Sequence[IOffsets]:
-    """Merge 2 or more offsets to a single offsets when continuous.
-    Ex: 2 4;5;20 => 2;20
+class BratTokenOnly(IBratFormatter):
+    """Default Brat Formatter: annotate a document by selecting continuous
+    sequences of tokens but ignore stopwords."""
 
-    :param annot: offsets of an Annotation to merge.
-    :return: a merged sequence of offsets.
-    """
+    def get_text_and_offsets(self, annot: Annotation) -> Tuple[str, str]:
+        """Return tokens' labels and token's offsets (merge if continuous)"""
+        sequences = group_continuous_seq(tokens=annot.tokens)
+        offsets = multiple_seq_to_offsets(sequences=sequences)
+        return annot.tokens_label, get_brat_format_seq(offsets)
 
-    tokens_seq: List[Tuple[IToken, bool]] = []
-    tokens_seq.extend([(token, False) for token in annot.tokens])
-    tokens_seq.extend([(token, True) for token in annot.stop_tokens])
-    tokens_seq.sort(key=lambda x: x[0].i)
 
-    # 1) Split the sequence by missing indices
-    last_seq: List[Tuple[IToken, bool]] = [tokens_seq[0]]
-    dis_sequences: List[List[Tuple[IToken, bool]]] = [last_seq]
-    for token, is_stop in tokens_seq[1:]:
-        last_token, last_is_stop = last_seq[-1]
-        if last_token.i + 1 == token.i:  # if continuous
-            last_seq.append((token, is_stop))
-        else:  # discontinuous
-            last_seq = [(token, is_stop)]
-            dis_sequences.append(last_seq)
+class BratTokenAndStop(IBratFormatter):
+    """A Brat formatter that takes into account stopwords: annotate a document
+    by selecting continuous sequences of tokens/stopwords."""
 
-    # 2) Remove leading and trailing stopwords. Ignore stopwords isolated.
-    offsets: List[IOffsets] = []
-    for seq in dis_sequences:
-        tokens_not_stop = [token for token, is_stop in seq if not is_stop]
-        if len(tokens_not_stop) == 0:  # stopwords only in the sequence
-            continue
-        offsets.append(
-            Offsets(
-                start=tokens_not_stop[0].start, end=tokens_not_stop[-1].end
+    def __init__(self, remove_trailing_stop=True):
+        """Create a brat formatter.
+
+        :param remove_trailing_stop: if True, trailing stopwords in a
+            discontinuous sequence will be removed.
+            Ex: [['North', 'and'], ['America']] -> [['North', ['America']]
+        """
+        self.remove_trailing_stop = remove_trailing_stop
+
+    def get_text_and_offsets(self, annot: Annotation) -> Tuple[str, str]:
+        tokens = [*annot.tokens, *annot.stop_tokens]
+        tokens.sort(key=lambda x: x.i)
+        sequences = group_continuous_seq(tokens=tokens)
+        if self.remove_trailing_stop:
+            stop_i = [stop.i for stop in annot.stop_tokens]
+            sequences = remove_trailing_stopwords(
+                sequences=sequences, stop_i=stop_i
             )
-        )
-    return offsets
+        seq_tokens = [token for seq in sequences for token in seq]
+        seq_label = " ".join([token.label for token in seq_tokens])
+        offsets = multiple_seq_to_offsets(sequences=sequences)
+        seq_offsets = get_brat_format_seq(offsets)
+        return seq_label, seq_offsets
+
+
+class BratSpan(IBratFormatter):
+    """A simple Brat formatter that only uses start,end offsets
+    of an annotation"""
+
+    def __init__(self, text: str):
+        """Create a brat formatter.
+
+        :param text: the document of the annotation.
+        """
+        self.text = text
+
+    def get_text_and_offsets(self, annot: Annotation) -> Tuple[str, str]:
+        """Return text, offsets by start and end offsets of the annotation."""
+        seq_label = self.text[annot.start : annot.end]  # noqa
+        seq_offsets = f"{annot.start} {annot.end}"
+        return seq_label, seq_offsets

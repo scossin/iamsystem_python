@@ -3,13 +3,8 @@ from typing import Any
 from typing import Callable
 from typing import Iterable
 from typing import List
-from typing import Sequence
 
-from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.matcher.annotation import Annotation
-from iamsystem.matcher.annotation import merge_offsets
-from iamsystem.tokenization.api import IOffsets
-from iamsystem.tokenization.util import get_tokens_text_substring
 
 
 class BratEntity:
@@ -25,15 +20,14 @@ class BratEntity:
         self,
         entity_id: str,
         brat_type: str,
-        offsets: Sequence[IOffsets],
+        offsets: str,
         text: str,
     ):
         """Create a Brat Entity.
 
         :param entity_id: a unique ID (^T[0-9]+$).
         :param brat_type: A Brat entity type (see Brat documentation).
-        :param offsets: (start,end) annotation offsets.
-          See :class:`~iamsystem.IOffsets`.
+        :param offsets: (start,end) offsets.
         :param text: document substring using (start,end) offsets.
         """
         self.entity_id = self._check_entity_id(entity_id)
@@ -53,7 +47,7 @@ class BratEntity:
         return (
             f"{self.entity_id}\t"
             f"{self.brat_type} "
-            f"{get_brat_format_seq(self.offsets)}\t"
+            f"{self.offsets}\t"
             f"{self.text}"
         )
 
@@ -153,11 +147,12 @@ class BratDocument:
                 b_type = annot.keywords[0].__getattribute__(keyword_attr)
             elif brat_type is not None:
                 b_type = brat_type
+            text, offsets = annot.brat_formatter.get_text_and_offsets(annot)
             brat_entity = BratEntity(
                 entity_id=self._get_entity_id(),
                 brat_type=b_type,
-                offsets=merge_offsets(annot),
-                text=get_tokens_text_substring(annot.tokens, text=text),
+                offsets=offsets,
+                text=text,
             )
             self.brat_entities.append(brat_entity)
 
@@ -168,9 +163,7 @@ class BratDocument:
             )
             self.brat_notes.append(brat_note)
 
-    def add_entity(
-        self, brat_type: str, offsets: List[IOffsets], text: str
-    ) -> None:
+    def add_entity(self, brat_type: str, offsets: str, text: str) -> None:
         """Add a Brat Entity.
 
         :param brat_type: A Brat entity type (see Brat documentation).

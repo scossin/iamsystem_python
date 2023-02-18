@@ -10,9 +10,10 @@ from iamsystem.tokenization.tokenize import french_tokenizer
 from iamsystem.tokenization.tokenize import split_alpha_num
 from iamsystem.tokenization.util import concat_tokens_label
 from iamsystem.tokenization.util import concat_tokens_norm_label
-from iamsystem.tokenization.util import get_max_end_offset
-from iamsystem.tokenization.util import get_min_start_offset
 from iamsystem.tokenization.util import get_span_seq_id
+from iamsystem.tokenization.util import group_continuous_seq
+from iamsystem.tokenization.util import multiple_seq_to_offsets
+from iamsystem.tokenization.util import remove_trailing_stopwords
 from iamsystem.tokenization.util import replace_offsets_by_new_str
 
 
@@ -59,14 +60,6 @@ class FrenchTokenizerTest(unittest.TestCase):
             self.tokenizer.tokenize("Meningo-encéphalite")
         )
 
-    def test_get_min_start_offset(self):
-        """0 is the min start value."""
-        self.assertEqual(0, get_min_start_offset(self.tokens))
-
-    def test_get_max_end_offset(self):
-        """19 is the last end value."""
-        self.assertEqual(19, get_max_end_offset(self.tokens))
-
     def test_get_span_seq_id(self):
         """Id of a sequence of tokens."""
         span_id = get_span_seq_id(self.tokens)
@@ -95,6 +88,43 @@ class FrenchTokenizerTest(unittest.TestCase):
             text=text, offsets_new_str=tokens_new_str
         )
         self.assertEqual(new_string, "ins -> vent -> g.")
+
+
+class DiscontinuousSeqTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tokenizer = french_tokenizer()
+        self.tokens = self.tokenizer.tokenize(
+            "a sentence with multiple tokens to gen num tokens, number 10"
+        )
+
+    def test_group_continuous_seq(self):
+        tokens = [self.tokens[i] for i in [0, 1, 2, 5, 6, 8, 10]]
+        continuous_seq = group_continuous_seq(tokens=tokens)
+        len_seq = [len(seq) for seq in continuous_seq]
+        self.assertEqual(len_seq, [3, 2, 1, 1])
+        self.assertEqual(3, len(continuous_seq[0]))
+
+    def test_remove_trailing_stopwords(self):
+        tokens = [self.tokens[i] for i in [0, 1, 2, 5, 6, 8, 10]]
+        sequences = group_continuous_seq(tokens=tokens)
+        # 2 is trailing in [0,1,2]
+        out_seq = remove_trailing_stopwords(sequences=sequences, stop_i=[2])
+        self.assertEqual(2, len(out_seq[0]))
+        # 1 is not trailing in [0,1,2]
+        out_seq = remove_trailing_stopwords(sequences=sequences, stop_i=[1])
+        self.assertEqual(3, len(out_seq[0]))
+        # [5,6] and [10] are removed. 2 sequences are removed:
+        self.assertEqual(4, len(out_seq))
+        out_seq = remove_trailing_stopwords(
+            sequences=sequences, stop_i=[5, 6, 10]
+        )
+        self.assertEqual(2, len(out_seq))
+
+    def test_discont_seq_to_offsets(self):
+        tokens = [self.tokens[i] for i in [0, 1, 2, 5, 6, 8, 10]]
+        sequences = group_continuous_seq(tokens=tokens)
+        offsets = multiple_seq_to_offsets(sequences=sequences)
+        self.assertEqual(4, len(offsets))
 
 
 class LowerNoAccentsTest(unittest.TestCase):

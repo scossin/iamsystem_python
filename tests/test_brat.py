@@ -10,6 +10,8 @@ from iamsystem.brat.adapter import BratWriter
 from iamsystem.brat.util import get_brat_format
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.keywords.keywords import Keyword
+from iamsystem.matcher.annotation import BratSpan
+from iamsystem.matcher.annotation import BratTokenAndStop
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.token import Offsets
@@ -41,8 +43,10 @@ class BratEntityTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.entity_id = "T1"
-        self.offsets = [Offsets(0, 4)]
-        self.offsets_discontinuous = [Offsets(0, 4), Offsets(8, 12)]
+        self.offsets = get_brat_format_seq([Offsets(0, 4)])
+        self.offsets_discontinuous = get_brat_format_seq(
+            [Offsets(0, 4), Offsets(8, 12)]
+        )
         self.text = "hello"
         self.brat_type = "Person"
 
@@ -75,6 +79,26 @@ class BratEntityTest(unittest.TestCase):
                 offsets=self.offsets,
                 text=self.text,
             )
+
+    def test_to_brat_format(self):
+        matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=2
+        )
+        annots = matcher.annot_text(text="cancer de la prostate")
+        self.assertEqual(annots[0].to_brat_format(), "0 6;13 21")
+        self.assertEqual(
+            str(annots[0]), "cancer prostate	0 6;13 21	cancer prostate"
+        )
+
+    def test_to_brat_format_leading_stop(self):
+        matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=2
+        )
+        annots = matcher.annot_text(text="cancer de la glande prostate")
+        self.assertEqual(annots[0].to_brat_format(), "0 6;20 28")
+        self.assertEqual(
+            str(annots[0]), "cancer prostate	0 6;20 28	cancer prostate"
+        )  # noqa
 
 
 class BraNoteTest(unittest.TestCase):
@@ -114,7 +138,7 @@ class MyEntity(Keyword):
 class BratDocumentTest(unittest.TestCase):
     def setUp(self) -> None:
         self.entity_id = "T1"
-        self.offsets = [Offsets(0, 4)]
+        self.offsets = get_brat_format_seq([Offsets(0, 4)])
         self.text = "hello"
         self.brat_type = "Person"
 
@@ -230,8 +254,56 @@ class BratDocumentTest(unittest.TestCase):
         annots_stop = matcher.annot_text(text="cancer de la prostate")
         matcher = Matcher.build(keywords=["cancer prostate"], w=3)
         annots_w = matcher.annot_text(text="cancer de la prostate")
-        self.assertNotEqual(
-            annots_stop[0].to_string(), annots_w[0].to_string()
+        self.assertEqual(annots_stop[0].to_string(), annots_w[0].to_string())
+
+
+class BratFormatterTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=2
+        )
+        self.text = "cancer de la glande prostate"
+        annots = self.matcher.annot_text(text=self.text)
+        self.annot = annots[0]
+
+    def test_default(self):
+        """Default is to group continuous sequence of tokens."""
+        self.assertEqual(
+            self.annot.to_string(), "cancer prostate	0 6;20 28	cancer prostate"
+        )
+
+    def test_stop_true(self):
+        """BratTokenAndStop remove trailing sequence of stopwords.
+        Here 'de', 'la' that are trailing thus removed."""
+        self.annot.set_brat_formatter(BratTokenAndStop())  # default True
+        self.assertEqual(
+            self.annot.to_string(), "cancer prostate	0 6;20 28	cancer prostate"
+        )
+
+    def test_stop_true_2(self):
+        """BratTokenAndStop remove trailing sequence of stopwords.
+        Here 'de', 'la' that are not trailing thus not removed."""
+        annots = self.matcher.annot_text(text="cancer de la prostate")
+        annot = annots[0]
+        annot.set_brat_formatter(BratTokenAndStop())  # default True
+        self.assertEqual(
+            annot.to_string(), "cancer de la prostate	0 21	cancer prostate"
+        )
+
+    def test_stop_false(self):
+        """Keep stopwords inside annotation, 'de', 'la' are present."""
+        self.annot.set_brat_formatter(BratTokenAndStop(False))
+        self.assertEqual(
+            self.annot.to_string(),
+            "cancer de la prostate	0 12;20 28	cancer prostate",
+        )
+
+    def test_span(self):
+        """Simply take start and end offsets of the annotation."""
+        self.annot.set_brat_formatter(BratSpan(text=self.text))
+        self.assertEqual(
+            self.annot.to_string(),
+            "cancer de la glande prostate	0 28	cancer prostate",
         )
 
 

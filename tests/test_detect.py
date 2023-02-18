@@ -92,7 +92,7 @@ class DetectTest(unittest.TestCase):
         annots_filt = rm_nested_annots(annots=annots, keep_ancestors=False)
         self.assertEqual(1, len(annots_filt))
         self.assertEqual(
-            annots_filt[0].norm_label, "insuffisance cardiaque gauche"
+            annots_filt[0].tokens_norm_label, "insuffisance cardiaque gauche"
         )
 
     def test_overlap_but_not_ancestors(self):

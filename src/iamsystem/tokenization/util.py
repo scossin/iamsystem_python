@@ -6,6 +6,7 @@ from typing import Tuple
 
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import IToken
+from iamsystem.tokenization.tokenize import Offsets
 
 
 def offsets_overlap(a: IOffsets, b: IOffsets) -> bool:
@@ -35,16 +36,6 @@ def get_span_seq_id(offsets_seq: Sequence[IOffsets]):
     ]
     span_seq_id = ";".join(offsets_seq_id)
     return span_seq_id
-
-
-def get_min_start_offset(offsets_seq: Sequence[IOffsets]) -> int:
-    """Return the minimum start value in a sequence of offsets."""
-    return min(offsets.start for offsets in offsets_seq)
-
-
-def get_max_end_offset(offsets_seq: Sequence[IOffsets]) -> int:
-    """Return the max end value in a sequence of offsets."""
-    return max(offsets.end for offsets in offsets_seq)
 
 
 def concat_tokens_norm_label(tokens: Sequence[IToken]) -> str:
@@ -99,3 +90,50 @@ def itoken_to_dict(token: IToken):
         "label": token.label,
         "norm_label": token.norm_label,
     }
+
+
+def group_continuous_seq(tokens: List[IToken]) -> List[List[IToken]]:
+    """Group continuous sequences.
+    From a sequence of tokens, group tokens that follow each other by
+    their indice. Ex: [1,2,3,5,6] => [[1,2,3], [5,6]]"""
+    if len(tokens) == 0:
+        return []
+    tokens.sort(key=lambda t: t.i)
+    # 1) Split the sequence by missing indices
+    seq: List[IToken] = [tokens[0]]
+    sequences: List[List[IToken]] = [seq]
+    for token in tokens[1:]:
+        last_token = seq[-1]
+        if last_token.i + 1 == token.i:  # if continuous
+            seq.append(token)
+        else:  # discontinuous, create a new sequence
+            seq = [token]
+            sequences.append(seq)
+    return sequences
+
+
+def remove_trailing_stopwords(
+    sequences: List[List[IToken]], stop_i=List[int]
+) -> List[List[IToken]]:
+    """In each continuous sequence, we want to remove trailing stopwords.
+    Ex: [['North', 'and'], ['America']] -> [['North'], ['America']]
+
+    :param sequences: multiple continuous sequences
+    :param stop_i: stopwords indices
+    :return: sequences without trailing stopwords.
+    """
+    out_seq = []
+    for seq in sequences:
+        i_not_stop = [token.i for token in seq if token.i not in stop_i]
+        if len(i_not_stop) == 0:  # stopwords only in the sequence
+            continue
+        last_i = i_not_stop[-1]
+        out_seq.append(seq[: last_i + 1])
+    return out_seq
+
+
+def multiple_seq_to_offsets(sequences: List[List[IToken]]) -> List[IOffsets]:
+    offsets = [
+        Offsets(start=seq[0].start, end=seq[-1].end) for seq in sequences
+    ]
+    return offsets

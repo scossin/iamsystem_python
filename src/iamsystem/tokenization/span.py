@@ -1,42 +1,49 @@
 """ Classes that store a sequence of tokens. """
-from typing import Sequence
+from typing import List
 
 from iamsystem.brat.util import get_brat_format_seq
+from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import ISpan
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.util import concat_tokens_label
 from iamsystem.tokenization.util import concat_tokens_norm_label
-from iamsystem.tokenization.util import get_max_end_offset
-from iamsystem.tokenization.util import get_min_start_offset
 from iamsystem.tokenization.util import get_span_seq_id
 from iamsystem.tokenization.util import offsets_overlap
 
 
-class Span(ISpan[TokenT]):
+class Span(ISpan[TokenT], IOffsets):
     """A class that represents a sequence of tokens in a document."""
 
-    def __init__(self, tokens: Sequence[TokenT]):
+    def __init__(self, tokens: List[TokenT]):
         """Create a Span.
 
-        :param tokens: an ordered sequence of TokenT, a generic type that
-            implements :class:`~iamsystem.IToken` protocol.
-
+        :param tokens: an ordered continuous or discontinuous sequence
+            of TokenT in a document.
         """
         self._tokens = tokens
-        self.start = get_min_start_offset(self._tokens)
-        """ The start offset of the first token."""
-        self.end = get_max_end_offset(self._tokens)
-        """ The end offset of the last token."""
-        self.label = concat_tokens_label(self._tokens)
-        """ The concatenation of each token's label."""
-        self.norm_label = concat_tokens_norm_label(self._tokens)
-        """ The index of the first token within the parent document."""
-        self.start_i = tokens[0].i
-        """ The index of the last token within the parent document."""
-        self.end_i = tokens[-1].i
 
     @property
-    def tokens(self) -> Sequence[TokenT]:
+    def start(self):
+        """The start offset of the first token."""
+        return self.tokens[0].start
+
+    @property
+    def start_i(self):
+        """The index of the first token within the parent document."""
+        return self.tokens[0].i
+
+    @property
+    def end(self):
+        """The start offset of the first token."""
+        return self.tokens[-1].end
+
+    @property
+    def end_i(self):
+        """The index of the last token within the parent document."""
+        return self.tokens[-1].i
+
+    @property
+    def tokens(self) -> List[TokenT]:
         """The tokens of the document that matched the keywords attribute of
         this instance.
 
@@ -57,10 +64,26 @@ class Span(ISpan[TokenT]):
         """
         return get_brat_format_seq(self._tokens)
 
+    @property
+    def tokens_label(self):
+        """The concatenation of each token's label."""
+        return concat_tokens_label(self._tokens)
+
+    @property
+    def tokens_norm_label(self):
+        """The concatenation of each token's norm_label."""
+        return concat_tokens_norm_label(self._tokens)
+
+    def get_text_substring(self, text: str) -> str:
+        """Return text substring."""
+        return text[self.start : self.end]  # noqa
+
     def __str__(self):
         """A dataclass string representation."""
         return (
-            f"Span(label='{self.label}', norm_label='{self.norm_label}', "
+            f"Span(tokens_label='{self.tokens_label}', "
+            f"tokens_norm_label='{self.tokens_norm_label}',"
+            f"start_i={self.start_i}, end_i={self.end_i}, "
             f"start={self.start}, end={self.end})"
         )
 
