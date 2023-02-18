@@ -6,44 +6,6 @@ from typing import Tuple
 
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import IToken
-from iamsystem.tokenization.token import Offsets
-
-
-def merge_offsets(offsets_seq: Sequence[IOffsets]) -> Sequence[IOffsets]:
-    """Merge 2 or more offsets to a single offsets when continuous.
-    Ex: 2 4;5;20 => 2;20
-    """
-    # Why it is complicated to build a Brat format ? Brat handles
-    # discontinuous word. An example is: 0 5;16 23 where ";" indicates the
-    # presence of discontinuous tokens. With a sequence of offsets
-    # there is no easy way to know if the tokens are continuous are not.
-    # Hence, there are several solutions: 1) For
-    # each token, get its Brat format and concatenate them. The output may
-    # look like this : 0 5;6:20;21:23 This is the method implemented by the
-    # 'get_span_seq_id' function. This is similar to annotating token by
-    # token although the tokens are continuous in the text. 2) if the
-    # token's end offset + 1 matches the next token's start then 'merge'
-    # them. However, if there is an extraspace in the text,
-    # this method fails and returns an output similar to 1)
-    # 3) With the document in input, check if characters between token's end
-    # offset and next token's start are all empty characters.
-    # It solved problem of 2) but this mehtod fails if any stopword is removed.
-
-    # I choose to implement solution 2) which should work in most of the cases.
-    if len(offsets_seq) == 0:
-        raise ValueError("empty tokens list")
-    offsets: List[IOffsets] = [offsets_seq[0]]
-    for token in offsets_seq[1:]:
-        last_offset: IOffsets = offsets[-1]
-        if (
-            token.start == last_offset.end
-            or token.start == last_offset.end + 1
-        ):
-            merged_offset = Offsets(start=last_offset.start, end=token.end)
-            offsets[-1] = merged_offset  # offsets replacement.
-        else:
-            offsets.append(token)
-    return offsets
 
 
 def offsets_overlap(a: IOffsets, b: IOffsets) -> bool:

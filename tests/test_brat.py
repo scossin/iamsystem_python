@@ -9,7 +9,6 @@ from iamsystem.brat.adapter import BratNote
 from iamsystem.brat.adapter import BratWriter
 from iamsystem.brat.util import get_brat_format
 from iamsystem.brat.util import get_brat_format_seq
-from iamsystem.brat.util import merge_offsets_and_get_brat_format
 from iamsystem.keywords.keywords import Keyword
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
@@ -35,16 +34,6 @@ class BratUtilsTest(unittest.TestCase):
         """Brat offsets format of the two tokens."""
         span_id = get_brat_format_seq(self.tokens)
         self.assertEqual("0 7;8 19", span_id)
-
-    def test_merge_offsets_and_get_brat_format(self):
-        """Merge '0 7;8 19' to '0 19' because 7 is next to 8."""
-        brat_offset_format = merge_offsets_and_get_brat_format(self.tokens)
-        self.assertEqual("0 19", brat_offset_format)
-
-    def test_merge_offsets_and_get_brat_format_no_tokens(self):
-        """Exception is raised when list is empty."""
-        with self.assertRaises(ValueError):
-            merge_offsets_and_get_brat_format([])
 
 
 class BratEntityTest(unittest.TestCase):
@@ -78,7 +67,7 @@ class BratEntityTest(unittest.TestCase):
         self.assertEqual("T1	Person 0 4;8 12	hello", str(brat_entity))
 
     def test_bad_entity_id(self):
-        """Entity id must start by 'T'."""
+        """Entity id must start by the letter T."""
         with self.assertRaises(ValueError):
             BratEntity(
                 entity_id="1",
@@ -241,7 +230,9 @@ class BratDocumentTest(unittest.TestCase):
         annots_stop = matcher.annot_text(text="cancer de la prostate")
         matcher = Matcher.build(keywords=["cancer prostate"], w=3)
         annots_w = matcher.annot_text(text="cancer de la prostate")
-        self.assertEqual(annots_stop[0].to_string(), annots_w[0].to_string())
+        self.assertNotEqual(
+            annots_stop[0].to_string(), annots_w[0].to_string()
+        )
 
 
 if __name__ == "__main__":

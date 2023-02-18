@@ -8,13 +8,16 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 
+from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.util import TransitionState
+from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.span import Span
 from iamsystem.tokenization.span import is_shorter_span_of
+from iamsystem.tokenization.token import Offsets
 from iamsystem.tokenization.util import itoken_to_dict
 from iamsystem.tokenization.util import min_start_or_end
 from iamsystem.tokenization.util import offsets_overlap
@@ -61,6 +64,19 @@ class Annotation(Span[TokenT]):
         ]
         stop_tokens_in_annot.sort(key=lambda token: token.i)
         return stop_tokens_in_annot
+
+    def to_brat_format(self) -> str:
+        """Get Brat offsets format. See https://brat.nlplab.org/standoff.html
+        'The start-offset is the index of the first character of the annotated
+        span in the text (".txt" file),
+        i.e. the number of characters in the document preceding it.
+        The end-offset is the index of the first character
+        after the annotated span.'
+
+        :return: a string format of tokens' offsets
+        """
+        offsets_seq_merged = merge_offsets(annot=self)
+        return get_brat_format_seq(offsets_seq_merged)
 
     @property
     def keywords(self) -> Sequence[IKeyword]:
@@ -268,3 +284,41 @@ def replace_annots(
     return replace_offsets_by_new_str(
         text=text, offsets_new_str=zip(annots, new_labels)
     )
+
+
+def merge_offsets(annot: Annotation) -> Sequence[IOffsets]:
+    """Merge 2 or more offsets to a single offsets when continuous.
+    Ex: 2 4;5;20 => 2;20
+
+    :param annot: offsets of an Annotation to merge.
+    :return: a merged sequence of offsets.
+    """
+
+    tokens_seq: List[Tuple[IToken, bool]] = []
+    tokens_seq.extend([(token, False) for token in annot.tokens])
+    tokens_seq.extend([(token, True) for token in annot.stop_tokens])
+    tokens_seq.sort(key=lambda x: x[0].i)
+
+    # 1) Split the sequence by missing indices
+    last_seq: List[Tuple[IToken, bool]] = [tokens_seq[0]]
+    dis_sequences: List[List[Tuple[IToken, bool]]] = [last_seq]
+    for token, is_stop in tokens_seq[1:]:
+        last_token, last_is_stop = last_seq[-1]
+        if last_token.i + 1 == token.i:  # if continuous
+            last_seq.append((token, is_stop))
+        else:  # discontinuous
+            last_seq = [(token, is_stop)]
+            dis_sequences.append(last_seq)
+
+    # 2) Remove leading and trailing stopwords. Ignore stopwords isolated.
+    offsets: List[IOffsets] = []
+    for seq in dis_sequences:
+        tokens_not_stop = [token for token, is_stop in seq if not is_stop]
+        if len(tokens_not_stop) == 0:  # stopwords only in the sequence
+            continue
+        offsets.append(
+            Offsets(
+                start=tokens_not_stop[0].start, end=tokens_not_stop[-1].end
+            )
+        )
+    return offsets

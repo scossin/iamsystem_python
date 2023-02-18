@@ -1,7 +1,7 @@
 """ Classes that store a sequence of tokens. """
 from typing import Sequence
 
-from iamsystem.brat.util import merge_offsets_and_get_brat_format
+from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.tokenization.api import ISpan
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.util import concat_tokens_label
@@ -55,7 +55,7 @@ class Span(ISpan[TokenT]):
 
         :return: a string format of tokens' offsets
         """
-        return merge_offsets_and_get_brat_format(self._tokens)
+        return get_brat_format_seq(self._tokens)
 
     def __str__(self):
         """A dataclass string representation."""

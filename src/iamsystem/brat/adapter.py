@@ -7,9 +7,9 @@ from typing import Sequence
 
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.matcher.annotation import Annotation
+from iamsystem.matcher.annotation import merge_offsets
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.util import get_tokens_text_substring
-from iamsystem.tokenization.util import merge_offsets
 
 
 class BratEntity:
@@ -156,7 +156,7 @@ class BratDocument:
             brat_entity = BratEntity(
                 entity_id=self._get_entity_id(),
                 brat_type=b_type,
-                offsets=merge_offsets(annot.tokens),
+                offsets=merge_offsets(annot),
                 text=get_tokens_text_substring(annot.tokens, text=text),
             )
             self.brat_entities.append(brat_entity)
