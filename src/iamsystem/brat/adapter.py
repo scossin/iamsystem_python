@@ -122,7 +122,6 @@ class BratDocument:
     def add_annots(
         self,
         annots: List[IAnnotation],
-        text: str,
         keyword_attr: str = None,
         brat_type: str = None,
     ) -> None:
@@ -130,7 +129,6 @@ class BratDocument:
 
         :param annots: a list of :class:`~iamsystem.Annotation`,
           :class:`~iamsystem.Matcher` output.
-        :param text: the document from which these annotations come from.
         :param keyword_attr: the attribute name of a
             :class:`~iamsystem.IKeyword` that stores brat_type.
             Default to None. If None, brat_type parameter must be used.

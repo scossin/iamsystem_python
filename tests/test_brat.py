@@ -187,9 +187,7 @@ class BratDocumentTest(unittest.TestCase):
         matcher.w = 3
         annots = matcher.annot_text(text=self.text_america)
         brat_document = BratDocument()
-        brat_document.add_annots(
-            annots, text=self.text_america, brat_type="COUNTRY"
-        )
+        brat_document.add_annots(annots, brat_type="COUNTRY")
 
         self.assertEqual(
             "T1\tCOUNTRY 0 5;16 23\tNorth America\n#1\tIAMSYSTEM T1\tNorth "
@@ -201,14 +199,12 @@ class BratDocumentTest(unittest.TestCase):
         """keyword_attr or brat_type must be set. Raise if both None."""
         brat_document = BratDocument()
         with self.assertRaises(ValueError):
-            brat_document.add_annots(self.annots, text=self.text_america)
+            brat_document.add_annots(self.annots)
 
     def test_add_annots_brat_type(self):
         """The brat_type parameter value is in the string representation."""
         brat_document = BratDocument()
-        brat_document.add_annots(
-            self.annots, text=self.text_america, brat_type="COUNTRY"
-        )
+        brat_document.add_annots(self.annots, brat_type="COUNTRY")
         self.assertEqual(
             "T1\tCOUNTRY 0 5;16 23\tNorth America\nT2\tCOUNTRY 10 23\tSouth "
             "America",
@@ -222,10 +218,9 @@ class BratDocumentTest(unittest.TestCase):
         entity1 = MyEntity(label="France", brat_type="COUNTRY")
         entity2 = MyEntity(label="South America", brat_type="CONTINENT")
         matcher.add_keywords(keywords=[entity1, entity2])
-        text = "France and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="France and South America")
         brat_document = BratDocument()
-        brat_document.add_annots(annots, text=text, keyword_attr="brat_type")
+        brat_document.add_annots(annots, keyword_attr="brat_type")
         self.assertEqual(
             "T1\tCOUNTRY 0 6\tFrance\nT2\tCONTINENT 11 24\tSouth America",
             brat_document.entities_to_string(),
@@ -234,9 +229,7 @@ class BratDocumentTest(unittest.TestCase):
     def test_brat_writer(self):
         """check save functions raise no error."""
         brat_document = BratDocument()
-        brat_document.add_annots(
-            self.annots, text=self.text_america, brat_type="COUNTRY"
-        )
+        brat_document.add_annots(self.annots, brat_type="COUNTRY")
         # filename = "./test.ann"
         # with(open(filename, 'w')) as p:
         # BratWriter.saveEntities(brat_entities=brat_document, write=p.write)

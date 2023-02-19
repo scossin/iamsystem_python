@@ -427,11 +427,10 @@ class BratDocTest(unittest.TestCase):
 
         ent1 = Entity(label="North America", kb_id="NA")
         matcher = Matcher.build(keywords=[ent1], w=3)
-        text = "North and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="North and South America")
         brat_document = BratDocument()
         brat_document.add_annots(
-            annots, text=text, brat_type="CONTINENT", keyword_attr=None
+            annots, brat_type="CONTINENT", keyword_attr=None
         )
         print(str(brat_document))
         # T1	CONTINENT 0 5;16 23	North America
@@ -459,12 +458,9 @@ class BratDocTest(unittest.TestCase):
 
         ent1 = Entity(label="North America", code="NA", brat_type="CONTINENT")
         matcher = Matcher.build(keywords=[ent1], w=3)
-        text = "North and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="North and South America")
         brat_document = BratDocument()
-        brat_document.add_annots(
-            annots=annots, text=text, keyword_attr="brat_type"
-        )
+        brat_document.add_annots(annots=annots, keyword_attr="brat_type")
         print(str(brat_document))
         # T1	CONTINENT 0 5;16 23	North America
         # #1	IAMSYSTEM T1	North America (NA)
@@ -488,10 +484,9 @@ class BratDocTest(unittest.TestCase):
 
         ent1 = Entity(label="North America", kb_id="NA")
         matcher = Matcher.build(keywords=[ent1], w=3)
-        text = "North and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="North and South America")
         doc = BratDocument()
-        doc.add_annots(annots, text=text, brat_type="CONTINENT")
+        doc.add_annots(annots=annots, brat_type="CONTINENT")
         temp_path = tempfile.mkdtemp()
         os.makedirs(temp_path, exist_ok=True)
         filename = os.path.join(temp_path, "docs.ann")

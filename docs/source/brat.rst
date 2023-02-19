@@ -22,7 +22,7 @@ The default Brat formatter groups continuous sequence of tokens:
 
 Indeed, "North America" has two tokens, "North" and "America" but a continuous annotation (0 13) is created.
 
-In order to have one annotation per token, you can use the :ref:`api_doc:IndividualTokenFormatter`:
+In order to have one Brat span for each token, you can use the :ref:`api_doc:IndividualTokenFormatter`:
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
