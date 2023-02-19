@@ -133,6 +133,13 @@ def remove_trailing_stopwords(
 
 
 def multiple_seq_to_offsets(sequences: List[List[IToken]]) -> List[IOffsets]:
+    """Create an Offsets for each continuous sequence, start being the
+        start offset of the first token in the sequence and
+        end being the end offset of the last token in the sequence.
+
+    :param sequences: multiple continuous sequences
+    :return: a list of offsets.
+    """
     offsets: List[IOffsets] = [
         Offsets(start=seq[0].start, end=seq[-1].end) for seq in sequences
     ]

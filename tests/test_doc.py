@@ -115,7 +115,6 @@ class MatcherDocTest(unittest.TestCase):
         # end_test_exact_match_custom_keyword
         self.assertEqual(
             "acute respiratory distress syndrome	7 42	https://www.wikidata.org/wiki/Q344873",  # noqa
-            # noqa
             str(annots[0]),
         )
         self.assertEqual("diarrrhea	47 56	diarrrhea (R19.7)", str(annots[1]))
@@ -508,6 +507,85 @@ class BratDocTest(unittest.TestCase):
                 lines[0], "T1	CONTINENT 0 5;16 23	North America\n"
             )
             self.assertEqual(lines[1], "#1	IAMSYSTEM T1	North America (NA)\n")
+
+    def test_brat_default_formatter(self):
+        """Show default formatter"""
+        # start_test_brat_default_formatter
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(keywords=["North America"])
+        annots = matcher.annot_text(text="North America")
+        for annot in annots:
+            print(annot)
+        # North America	0 13	North America
+        # end_test_brat_default_formatter
+        self.assertEqual(str(annots[0]), "North America	0 13	North America")
+
+    def test_brat_individual_formatter(self):
+        """Show token per token formatter"""
+        # start_test_brat_individual_formatter
+        from iamsystem import IndividualTokenFormatter
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(keywords=["North America"])
+        annots = matcher.annot_text(text="North America")
+        formatter = IndividualTokenFormatter()
+        for annot in annots:
+            annot.brat_formatter = formatter
+            print(annot)
+        # North America	0 5;6 13	North America
+        # end_test_brat_individual_formatter
+        self.assertEqual(
+            str(annots[0]), "North America	0 5;6 13	North America"
+        )
+
+    def test_brat_tokenstop_formatter(self):
+        """Show adding stopwords when continuous in the sequence"""
+        # start_test_brat_tokenstop_formatter
+        from iamsystem import Entity
+        from iamsystem import Matcher
+        from iamsystem import TokenStopFormatter
+
+        matcher = Matcher.build(
+            keywords=[Entity(label="cancer de prostate", kb_id="C61")],
+            stopwords=["de", "la"],
+        )
+        annots = matcher.annot_text(text="cancer de la prostate")
+        formatter = TokenStopFormatter()
+        for annot in annots:
+            print(f"Default formatter: {annot}")
+            annot.brat_formatter = formatter
+            print(f"TokenStop formatter: {annot}")
+        # Default formatter: cancer prostate	0 6;13 21	cancer de prostate (C61) # noqa
+        # TokenStop formatter: cancer de la prostate	0 21	cancer de prostate (C61) # noqa
+        # end_test_brat_tokenstop_formatter
+        self.assertEqual(
+            str(annots[0]),
+            "cancer de la prostate	0 21	cancer de " "prostate (C61)",
+        )
+
+    def test_brat_span_formatter(self):
+        """Show creating a span from start to end of the annotation."""
+        # start_test_brat_span_formatter
+        from iamsystem import Matcher
+        from iamsystem import SpanFormatter
+
+        matcher = Matcher.build(
+            keywords=["North America"], stopwords=["and"], w=2
+        )
+        text = "North and South America"
+        annots = matcher.annot_text(text=text)
+        formatter = SpanFormatter(text=text)
+        for annot in annots:
+            print(f"Default formatter: {annot}")
+            annot.brat_formatter = formatter
+            print(f"Span formatter: {annot}")
+        # Default formatter: North America	0 5;16 23	North America
+        # Span formatter: North and South America	0 23	North America
+        # end_test_brat_span_formatter
+        self.assertEqual(
+            str(annots[0]), "North and South America	0 23	North America"
+        )
 
 
 class FuzzyDocTest(unittest.TestCase):

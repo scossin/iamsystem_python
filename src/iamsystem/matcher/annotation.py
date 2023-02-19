@@ -8,11 +8,11 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 
+from iamsystem.brat.formatter import TokenFormatter
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IBratFormatter
-from iamsystem.matcher.formatter import TokenFormatter
 from iamsystem.matcher.util import TransitionState
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import TokenT
@@ -64,7 +64,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
 
     @property
     def label(self):
-        """The tokens_label."""
+        """@Deprecated. An annotation label. Return 'tokens_label' attribute"""
         return self.tokens_label
 
     @property

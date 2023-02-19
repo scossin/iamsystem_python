@@ -278,6 +278,37 @@ ESimStringMeasure
 Brat
 ----
 
+Formatter
+^^^^^^^^^
+
+TokenFormatter
+""""""""""""""
+.. autoclass:: iamsystem.TokenFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+IndividualTokenFormatter
+""""""""""""""""""""""""
+.. autoclass:: iamsystem.IndividualTokenFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+TokenStopFormatter
+""""""""""""""""""
+.. autoclass:: iamsystem.TokenStopFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+SpanFormatter
+""""""""""""""
+.. autoclass:: iamsystem.SpanFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 BratDocument
 ^^^^^^^^^^^^
 .. autoclass:: iamsystem.BratDocument

@@ -7,11 +7,12 @@ from iamsystem.brat.adapter import BratDocument
 from iamsystem.brat.adapter import BratEntity
 from iamsystem.brat.adapter import BratNote
 from iamsystem.brat.adapter import BratWriter
+from iamsystem.brat.formatter import IndividualTokenFormatter
+from iamsystem.brat.formatter import SpanFormatter
+from iamsystem.brat.formatter import TokenStopFormatter
 from iamsystem.brat.util import get_brat_format
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.keywords.keywords import Keyword
-from iamsystem.matcher.formatter import SpanFormatter
-from iamsystem.matcher.formatter import TokenStopFormatter
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.token import Offsets
@@ -304,6 +305,15 @@ class BratFormatterTest(unittest.TestCase):
         self.assertEqual(
             self.annot.to_string(),
             "cancer de la glande prostate	0 28	cancer prostate",
+        )
+
+    def test_individual(self):
+        """Check it outputs offsets for each token."""
+        annots = self.matcher.annot_text(text="cancer prostate")
+        annot = annots[0]
+        annot.brat_formatter = IndividualTokenFormatter()
+        self.assertEqual(
+            annot.to_string(), "cancer prostate	0 6;7 15	cancer prostate"
         )
 
 

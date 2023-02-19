@@ -113,4 +113,4 @@ then we say that a1 **partially overlaps** a2.
 The first annotation partially overlaps the second because it ends after the second starts.
 In this example, both annotations share the *"cancer"* token.
 
-Similarly the the :ref:`api_doc:rm_nested_annots` function has no effect here.
+Similarly the :ref:`api_doc:rm_nested_annots` function has no effect here.

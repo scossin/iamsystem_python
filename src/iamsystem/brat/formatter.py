@@ -21,6 +21,17 @@ class TokenFormatter(IBratFormatter):
         return seq_label, seq_offsets
 
 
+class IndividualTokenFormatter(IBratFormatter):
+    """Annotate a document by creating (start,end) offsets for each token
+    (In comparison to TokenFormatter, it doesn't merge continuous sequence)."""
+
+    def get_text_and_offsets(self, annot: IAnnotation) -> Tuple[str, str]:
+        """Return tokens' labels and token's offsets (merge if continuous)"""
+        seq_offsets = get_brat_format_seq(offsets_seq=annot.tokens)
+        seq_label = " ".join([token.label for token in annot.tokens])
+        return seq_label, seq_offsets
+
+
 class TokenStopFormatter(IBratFormatter):
     """A Brat formatter that takes into account stopwords: annotate a document
     by selecting continuous sequences of tokens/stopwords."""
