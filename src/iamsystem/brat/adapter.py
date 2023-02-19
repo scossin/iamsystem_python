@@ -4,7 +4,7 @@ from typing import Callable
 from typing import Iterable
 from typing import List
 
-from iamsystem.matcher.annotation import Annotation
+from iamsystem.matcher.api import IAnnotation
 
 
 class BratEntity:
@@ -97,10 +97,10 @@ class BratNote:
         )
 
 
-get_note_fun = Callable[[Annotation], str]
+get_note_fun = Callable[[IAnnotation], str]
 
 
-def get_note_keyword_label(annot: Annotation) -> str:
+def get_note_keyword_label(annot: IAnnotation) -> str:
     """Return the string representation of the first keyword
     of the annotation."""
     return str(annot.keywords[0])
@@ -121,7 +121,7 @@ class BratDocument:
 
     def add_annots(
         self,
-        annots: List[Annotation],
+        annots: List[IAnnotation],
         text: str,
         keyword_attr: str = None,
         brat_type: str = None,
@@ -130,7 +130,7 @@ class BratDocument:
 
         :param annots: a list of :class:`~iamsystem.Annotation`,
           :class:`~iamsystem.Matcher` output.
-        :param text: the document from which these annotations comes from.
+        :param text: the document from which these annotations come from.
         :param keyword_attr: the attribute name of a
             :class:`~iamsystem.IKeyword` that stores brat_type.
             Default to None. If None, brat_type parameter must be used.
@@ -205,7 +205,7 @@ class BratDocument:
         return "\n".join(brat_notes)
 
     def __str__(self):
-        """Return the Brat string format all of entities."""
+        """Return the Brat string format for all of these entities."""
         return (
             f"{self.entities_to_string()}\n"
             f"{self.notes_to_string()}".strip()

@@ -10,8 +10,8 @@ from iamsystem.brat.adapter import BratWriter
 from iamsystem.brat.util import get_brat_format
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.keywords.keywords import Keyword
-from iamsystem.matcher.annotation import BratSpan
-from iamsystem.matcher.annotation import BratTokenAndStop
+from iamsystem.matcher.formatter import SpanFormatter
+from iamsystem.matcher.formatter import TokenStopFormatter
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.token import Offsets
@@ -275,7 +275,7 @@ class BratFormatterTest(unittest.TestCase):
     def test_stop_true(self):
         """BratTokenAndStop remove trailing sequence of stopwords.
         Here 'de', 'la' that are trailing thus removed."""
-        self.annot.set_brat_formatter(BratTokenAndStop())  # default True
+        self.annot.brat_formatter = TokenStopFormatter()  # default True
         self.assertEqual(
             self.annot.to_string(), "cancer prostate	0 6;20 28	cancer prostate"
         )
@@ -285,14 +285,14 @@ class BratFormatterTest(unittest.TestCase):
         Here 'de', 'la' that are not trailing thus not removed."""
         annots = self.matcher.annot_text(text="cancer de la prostate")
         annot = annots[0]
-        annot.set_brat_formatter(BratTokenAndStop())  # default True
+        annot.brat_formatter = TokenStopFormatter()  # default True
         self.assertEqual(
             annot.to_string(), "cancer de la prostate	0 21	cancer prostate"
         )
 
     def test_stop_false(self):
         """Keep stopwords inside annotation, 'de', 'la' are present."""
-        self.annot.set_brat_formatter(BratTokenAndStop(False))
+        self.annot.brat_formatter = TokenStopFormatter(False)
         self.assertEqual(
             self.annot.to_string(),
             "cancer de la prostate	0 12;20 28	cancer prostate",
@@ -300,7 +300,7 @@ class BratFormatterTest(unittest.TestCase):
 
     def test_span(self):
         """Simply take start and end offsets of the annotation."""
-        self.annot.set_brat_formatter(BratSpan(text=self.text))
+        self.annot.brat_formatter = SpanFormatter(text=self.text)
         self.assertEqual(
             self.annot.to_string(),
             "cancer de la glande prostate	0 28	cancer prostate",

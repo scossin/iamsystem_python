@@ -8,38 +8,24 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 
-from typing_extensions import Protocol
-
-from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
+from iamsystem.matcher.api import IAnnotation
+from iamsystem.matcher.api import IBratFormatter
+from iamsystem.matcher.formatter import TokenFormatter
 from iamsystem.matcher.util import TransitionState
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.span import Span
 from iamsystem.tokenization.span import is_shorter_span_of
-from iamsystem.tokenization.util import group_continuous_seq
 from iamsystem.tokenization.util import itoken_to_dict
 from iamsystem.tokenization.util import min_start_or_end
-from iamsystem.tokenization.util import multiple_seq_to_offsets
 from iamsystem.tokenization.util import offsets_overlap
-from iamsystem.tokenization.util import remove_trailing_stopwords
 from iamsystem.tokenization.util import replace_offsets_by_new_str
 from iamsystem.tree.nodes import INode
 
 
-class IBratFormatter(Protocol):
-    """A BratFormatter takes an annotation and decides how to annotate a
-    document with the (discontinuous) sequence of tokens,
-    thus how to generate a Brat format."""
-
-    def get_text_and_offsets(self, annot: "Annotation") -> Tuple[str, str]:
-        """Return text (document substring) and annotation's offsets in the
-        Brat format"""
-        raise NotImplementedError
-
-
-class Annotation(Span[TokenT]):
+class Annotation(Span[TokenT], IAnnotation[TokenT]):
     """Ouput class of :class:`~iamsystem.Matcher` storing information on the
     detected entities."""
 
@@ -58,48 +44,36 @@ class Annotation(Span[TokenT]):
             One to several algorithms per token.
         :param last_state: a final state of iamsystem algorithm containing the
             keyword that matched this sequence of tokens.
-        :param stop_tokens: the list of stopwords tokens inside the document.
+        :param stop_tokens: the list of stopwords tokens of the document.
         """
         super().__init__(tokens)
         self.algos = algos
         self._last_state = last_state
         self._stop_tokens = stop_tokens
-        self._brat_formatter: IBratFormatter = BratTokenOnly()
+        self._brat_formatter: IBratFormatter = TokenFormatter()
 
     @property
     def brat_formatter(self) -> IBratFormatter:
         """Return the Brat formatter."""
         return self._brat_formatter
 
+    @brat_formatter.setter
+    def brat_formatter(self, brat_formatter: IBratFormatter):
+        """Change the Brat formatter to produce a different Brat annotation"""
+        self._brat_formatter = brat_formatter
+
     @property
     def label(self):
         """The tokens_label."""
         return self.tokens_label
 
-    def set_brat_formatter(self, brat_formatter: IBratFormatter):
-        """Change the Brat formatter to produce a different Brat annotation"""
-        self._brat_formatter = brat_formatter
-
-    def _keywords_to_string(self):
-        """Merge the keywords."""
-        keywords_str = [str(keyword) for keyword in self.keywords]
-        return ";".join(keywords_str)
-
-    def _get_norm_label_algos_str(self):
-        """Get a string representation of tokens and algorithms."""
-        return ";".join(
-            [
-                f"{token.norm_label}({','.join(algos)})"
-                for token, algos in self.get_tokens_algos()
-            ]
-        )
-
     @property
     def stop_tokens(self) -> List[IToken]:
         """The list of stopwords tokens inside the annotation detected by
         the Matcher stopwords instance."""
-        # Filter the stopwords tokens of a document: keep only those inside the
-        # annotation. Note also that I don't filter before the
+        # Note that _stop_tokens are stopwords of the document. The reason to
+        # filter now and not before is that, when order_tokens = T, stopwords
+        # inside an annotation may not have been seen.
         stop_tokens_in_annot = [
             token
             for token in self._stop_tokens
@@ -175,6 +149,20 @@ class Annotation(Span[TokenT]):
             token_annots_str = self._get_norm_label_algos_str()
             columns.append(token_annots_str)
         return "\t".join(columns)
+
+    def _keywords_to_string(self):
+        """Merge the keywords."""
+        keywords_str = [str(keyword) for keyword in self.keywords]
+        return ";".join(keywords_str)
+
+    def _get_norm_label_algos_str(self):
+        """Get a string representation of tokens and algorithms."""
+        return ";".join(
+            [
+                f"{token.norm_label}({','.join(algos)})"
+                for token, algos in self.get_tokens_algos()
+            ]
+        )
 
 
 def is_ancestor_annot_of(a: Annotation, b: Annotation) -> bool:
@@ -293,61 +281,3 @@ def replace_annots(
     return replace_offsets_by_new_str(
         text=text, offsets_new_str=zip(annots, new_labels)
     )
-
-
-class BratTokenOnly(IBratFormatter):
-    """Default Brat Formatter: annotate a document by selecting continuous
-    sequences of tokens but ignore stopwords."""
-
-    def get_text_and_offsets(self, annot: Annotation) -> Tuple[str, str]:
-        """Return tokens' labels and token's offsets (merge if continuous)"""
-        sequences = group_continuous_seq(tokens=annot.tokens)
-        offsets = multiple_seq_to_offsets(sequences=sequences)
-        return annot.tokens_label, get_brat_format_seq(offsets)
-
-
-class BratTokenAndStop(IBratFormatter):
-    """A Brat formatter that takes into account stopwords: annotate a document
-    by selecting continuous sequences of tokens/stopwords."""
-
-    def __init__(self, remove_trailing_stop=True):
-        """Create a brat formatter.
-
-        :param remove_trailing_stop: if True, trailing stopwords in a
-            discontinuous sequence will be removed.
-            Ex: [['North', 'and'], ['America']] -> [['North', ['America']]
-        """
-        self.remove_trailing_stop = remove_trailing_stop
-
-    def get_text_and_offsets(self, annot: Annotation) -> Tuple[str, str]:
-        tokens = [*annot.tokens, *annot.stop_tokens]
-        tokens.sort(key=lambda x: x.i)
-        sequences = group_continuous_seq(tokens=tokens)
-        if self.remove_trailing_stop:
-            stop_i = [stop.i for stop in annot.stop_tokens]
-            sequences = remove_trailing_stopwords(
-                sequences=sequences, stop_i=stop_i
-            )
-        seq_tokens = [token for seq in sequences for token in seq]
-        seq_label = " ".join([token.label for token in seq_tokens])
-        offsets = multiple_seq_to_offsets(sequences=sequences)
-        seq_offsets = get_brat_format_seq(offsets)
-        return seq_label, seq_offsets
-
-
-class BratSpan(IBratFormatter):
-    """A simple Brat formatter that only uses start,end offsets
-    of an annotation"""
-
-    def __init__(self, text: str):
-        """Create a brat formatter.
-
-        :param text: the document of the annotation.
-        """
-        self.text = text
-
-    def get_text_and_offsets(self, annot: Annotation) -> Tuple[str, str]:
-        """Return text, offsets by start and end offsets of the annotation."""
-        seq_label = self.text[annot.start : annot.end]  # noqa
-        seq_offsets = f"{annot.start} {annot.end}"
-        return seq_label, seq_offsets

@@ -21,26 +21,10 @@ class Span(ISpan[TokenT], IOffsets):
             of TokenT in a document.
         """
         self._tokens = tokens
-
-    @property
-    def start(self):
         """The start offset of the first token."""
-        return self.tokens[0].start
-
-    @property
-    def start_i(self):
-        """The index of the first token within the parent document."""
-        return self.tokens[0].i
-
-    @property
-    def end(self):
+        self.start = self.tokens[0].start
         """The start offset of the first token."""
-        return self.tokens[-1].end
-
-    @property
-    def end_i(self):
-        """The index of the last token within the parent document."""
-        return self.tokens[-1].i
+        self.end = self.tokens[-1].end
 
     @property
     def tokens(self) -> List[TokenT]:
@@ -51,6 +35,16 @@ class Span(ISpan[TokenT], IOffsets):
             that implements :class:`~iamsystem.IToken`.
         """
         return self._tokens
+
+    @property
+    def start_i(self):
+        """The index of the first token within the parent document."""
+        return self.tokens[0].i
+
+    @property
+    def end_i(self):
+        """The index of the last token within the parent document."""
+        return self.tokens[-1].i
 
     def to_brat_format(self) -> str:
         """Get Brat offsets format. See https://brat.nlplab.org/standoff.html

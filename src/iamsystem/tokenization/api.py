@@ -1,5 +1,6 @@
 """ Module interface. """
 from abc import abstractmethod
+from typing import List
 from typing import Sequence
 from typing import TypeVar
 
@@ -47,7 +48,19 @@ class ISpan(Protocol[TokenT]):
 
     @property
     @abstractmethod
-    def tokens(self) -> Sequence[TokenT]:
+    def start_i(self):
+        """The index of the first token within the parent document."""
+        return self.tokens[0].i
+
+    @property
+    @abstractmethod
+    def end_i(self):
+        """The index of the last token within the parent document."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def tokens(self) -> List[TokenT]:
         """Get the sequence of tokens."""
         raise NotImplementedError
 

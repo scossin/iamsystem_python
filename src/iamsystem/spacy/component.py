@@ -16,7 +16,7 @@ from spacy.tokens import Span
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
-from iamsystem.matcher.annotation import Annotation
+from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.spacy.token import TokenSpacyAdapter
@@ -69,7 +69,7 @@ class BaseCustomComp(ABC):
     def process(self, doc) -> List[Span]:
         """Annotate a document. Call IAMsystem algorithm."""
         tokens = self.matcher.tokenize(text=doc)
-        anns: List[Annotation[TokenSpacyAdapter]] = self.matcher.annot_tokens(
+        anns: List[IAnnotation[TokenSpacyAdapter]] = self.matcher.annot_tokens(
             tokens=tokens
         )
         spacy_spans = []
