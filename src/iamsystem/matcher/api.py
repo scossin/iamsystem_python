@@ -7,6 +7,7 @@ from typing_extensions import Protocol
 from typing_extensions import runtime_checkable
 
 from iamsystem.fuzzy.api import ISynsProvider
+from iamsystem.keywords.api import IKeyword
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import ISpan
@@ -27,7 +28,8 @@ class IAnnotation(ISpan, IOffsets, Protocol[TokenT]):
 
     @property
     def stop_tokens(self) -> List[TokenT]:
-        """Access brat formatter."""
+        """The list of stopwords tokens inside the annotation detected by
+        the Matcher stopwords instance"""
         raise NotImplementedError
 
     @property
@@ -36,7 +38,7 @@ class IAnnotation(ISpan, IOffsets, Protocol[TokenT]):
         raise NotImplementedError
 
     @property
-    def keywords(self):  #
+    def keywords(self) -> Sequence[IKeyword]:
         """Keywords linked to this annotation."""
         raise NotImplementedError
 
