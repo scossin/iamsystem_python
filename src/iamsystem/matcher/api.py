@@ -20,6 +20,12 @@ class IAnnotation(ISpan, IOffsets, Protocol[TokenT]):
     """Declare the attributes and methods expected by an Annotation."""
 
     @property
+    def algos(self) -> List[List[str]]:
+        """For each token, the list of algorithms that matched.
+        One to several algorithms per token."""
+        raise NotImplementedError
+
+    @property
     def stop_tokens(self) -> List[TokenT]:
         """Access brat formatter."""
         raise NotImplementedError

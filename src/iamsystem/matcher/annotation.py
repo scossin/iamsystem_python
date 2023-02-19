@@ -47,10 +47,14 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         :param stop_tokens: the list of stopwords tokens of the document.
         """
         super().__init__(tokens)
-        self.algos = algos
+        self._algos = algos
         self._last_state = last_state
         self._stop_tokens = stop_tokens
         self._brat_formatter: IBratFormatter = TokenFormatter()
+
+    @property
+    def algos(self) -> List[List[str]]:
+        return self._algos
 
     @property
     def brat_formatter(self) -> IBratFormatter:
