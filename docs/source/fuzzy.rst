@@ -98,10 +98,10 @@ and Soundex which is a phonetic algorithm.
     :start-after: # start_test_spellwise
     :end-before: # end_test_spellwise
 
-The *spellwise* parameter of the build function expects an iterable of dictionary.
+The *spellwise* parameter of the *build* function expects an iterable of dictionary.
 The key-value pairs of a dictionary are passed to the :ref:`api_doc:SpellWiseWrapper` init function.
-Since a string distance algorithm is context independent, the build function placed them in a :ref:`fuzzy:CacheFuzzyAlgos`
-to avoid calling them multiple times.
+Since a string distance algorithm is context independent, the Matcher *build* function placed them in
+a :ref:`fuzzy:CacheFuzzyAlgos` to avoid calling them multiple times.
 For a list of available Spellwise algorithms, see :ref:`api_doc:ESpellWiseAlgo`.
 
 String distance algorithms are often used to detect typos in a document.
@@ -117,15 +117,18 @@ To avoid calling a string distance algorithm on common words of a language, you 
     :end-before: # end_test_string_distance_ignored_w
 
 Since *poils* is one substitution from *poids*, the algorithm returns a false positive.
-By telling the algorithm to ignore common words French words like *poils*, the string distance algorithm
-is called only for unknown words.
+By adding *poils* to *string_distance_ignored_w*, the string distance algorithm is not called.
+
+I recommend to pass all common words of a language to *string_distance_ignored_w* parameter,
+it will make iamsystem faster since all string distance algorithms will be called only for unknown words
+and this will reduce false positives.
 
 SimString
 """""""""
 .. _simstring: http://chokkan.org/software/simstring/
 
 The `pysimstring`_ library provides an API to the fast `simstring`_ algorithm implemented in C++.
-The *simstring* parameter of the build function expects an iterable of dictionary.
+The *simstring* parameter of the Matcher *build* function expects an iterable of dictionary.
 The key-value pairs of a dictionary are passed to the :ref:`api_doc:SimStringWrapper` init function.
 Since a string distance algorithm is context independent, the build function placed them in a :ref:`fuzzy:CacheFuzzyAlgos`
 to avoid calling them multiple times.
@@ -157,7 +160,7 @@ their results.
 
 Note that although we could have put the Abbreviations instance in the cache, it's not necessary
 to do so since this algorithm is as fast as the cache.
-If you use the *build* function of the matcher, string distance algorithms are automatically cached.
+If you use the Matcher *build* function, string distance algorithms are automatically cached.
 
 
 FuzzyRegex

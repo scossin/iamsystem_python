@@ -18,7 +18,7 @@ class SpacyTokenizer(ITokenizer[TokenSpacyAdapter]):
         that uses spaCy's tokenizer.
 
         :param nlp: a spacy Language.
-        :param norm_fun: a function that normalizes the 'norm_' attribute
+        :param norm_fun: a function that normalizes the 'norm\\_' attribute
             of a spaCy token, attribute used by iamsystem algorithm.
         """
         self.nlp = nlp

@@ -20,6 +20,14 @@ Matcher build
    :members: build
    :noindex:
 
+Span
+----
+.. autoclass:: iamsystem.matcher.annotation.Span
+   :inherited-members:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Annotation
 ----------
 .. autoclass:: iamsystem.Annotation
@@ -39,7 +47,6 @@ replace_annots
 Keyword and subclasses
 ----------------------
 
-
 IKeyword
 ^^^^^^^^
 .. autoclass:: iamsystem.IKeyword
@@ -55,15 +62,12 @@ IEntity
    :show-inheritance:
 
 
-
 Keyword
 ^^^^^^^
 .. autoclass:: iamsystem.Keyword
    :members:
    :undoc-members:
    :show-inheritance:
-
-   .. automethod:: __init__
 
 Entity
 ^^^^^^
@@ -72,22 +76,20 @@ Entity
    :undoc-members:
    :show-inheritance:
 
-   .. automethod:: __init__
-
 Terminology
 ^^^^^^^^^^^
 .. autoclass:: iamsystem.Terminology
    :members:
    :show-inheritance:
 
-
 Tokenization
 -------
 
 IOffsets
-^^^^^
+^^^^^^^^
 .. autoclass:: iamsystem.IOffsets
    :show-inheritance:
+   :members:
 
 Offsets
 ^^^^^^^
@@ -99,6 +101,7 @@ Offsets
 IToken
 ^^^^^^
 .. autoclass:: iamsystem.IToken
+   :members:
    :show-inheritance:
 
 Token
@@ -243,6 +246,9 @@ SpellWiseWrapper
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
+
 ESpellWiseAlgo
 """"""""""""""
 .. autoclass:: iamsystem.ESpellWiseAlgo
@@ -271,6 +277,37 @@ ESimStringMeasure
 
 Brat
 ----
+
+Formatter
+^^^^^^^^^
+
+TokenFormatter
+""""""""""""""
+.. autoclass:: iamsystem.TokenFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+IndividualTokenFormatter
+""""""""""""""""""""""""
+.. autoclass:: iamsystem.IndividualTokenFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+TokenStopFormatter
+""""""""""""""""""
+.. autoclass:: iamsystem.TokenStopFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+SpanFormatter
+""""""""""""""
+.. autoclass:: iamsystem.SpanFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 BratDocument
 ^^^^^^^^^^^^
@@ -309,6 +346,14 @@ spaCy
 IAMsystemSpacy
 ^^^^^^^^^^^^^^
 .. autoclass:: iamsystem.spacy.IAMsystemSpacy
+   :members:
+   :show-inheritance:
+
+   .. automethod:: __init__
+
+IAMsystemBuildSpacy
+^^^^^^^^^^^^^^^^^^^
+.. autoclass:: iamsystem.spacy.IAMsystemBuildSpacy
    :members:
    :show-inheritance:
 

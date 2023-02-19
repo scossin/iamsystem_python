@@ -40,7 +40,7 @@ class MatcherDocTest(unittest.TestCase):
             keywords=["acute respiratory distress syndrome", "diarrrhea"]
         )
         annots = matcher.annot_text(
-            text="Pt c/o Acute Respiratory Distress " "Syndrome and diarrrhea"
+            text="Pt c/o Acute Respiratory Distress Syndrome and diarrrhea"
         )
         for annot in annots:
             print(annot)
@@ -157,11 +157,11 @@ class TokenizerDocTest(unittest.TestCase):
         tokens = tokenizer.tokenize("SARS-CoV+")
         for token in tokens:
             print(token)
-        # Token(label='SARS', norm_label='sars', start=0, end=4)
-        # Token(label='CoV', norm_label='cov', start=5, end=8)
+        # Token(label='SARS', norm_label='sars', start=0, end=4, i=0)
+        # Token(label='CoV', norm_label='cov', start=5, end=8, i=1)
         # end_test_tokenizer
         self.assertEqual(
-            "Token(label='SARS', norm_label='sars', start=0, end=4)",
+            "Token(label='SARS', norm_label='sars', start=0, end=4, i=0)",
             str(tokens[0]),
         )
 
@@ -176,12 +176,13 @@ class TokenizerDocTest(unittest.TestCase):
         tokens = tokenizer.tokenize("SARS-CoV+")
         for token in tokens:
             print(token)
-        # Token(label='SARS', norm_label='sars', start=0, end=4)
-        # Token(label='CoV', norm_label='cov', start=5, end=8)
-        # Token(label='+', norm_label='+', start=8, end=9)
+        # Token(label='SARS', norm_label='sars', start=0, end=4, i=0)
+        # Token(label='CoV', norm_label='cov', start=5, end=8, i=1)
+        # Token(label='+', norm_label='+', start=8, end=9, i=2)
         # end_test_custom_tokenizer
         self.assertEqual(
-            "Token(label='+', norm_label='+', start=8, end=9)", str(tokens[2])
+            "Token(label='+', norm_label='+', start=8, end=9, i=2)",
+            str(tokens[2]),
         )
 
     def test_matcher_with_custom_tokenizer(self):
@@ -426,11 +427,10 @@ class BratDocTest(unittest.TestCase):
 
         ent1 = Entity(label="North America", kb_id="NA")
         matcher = Matcher.build(keywords=[ent1], w=3)
-        text = "North and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="North and South America")
         brat_document = BratDocument()
         brat_document.add_annots(
-            annots, text=text, brat_type="CONTINENT", keyword_attr=None
+            annots, brat_type="CONTINENT", keyword_attr=None
         )
         print(str(brat_document))
         # T1	CONTINENT 0 5;16 23	North America
@@ -458,12 +458,9 @@ class BratDocTest(unittest.TestCase):
 
         ent1 = Entity(label="North America", code="NA", brat_type="CONTINENT")
         matcher = Matcher.build(keywords=[ent1], w=3)
-        text = "North and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="North and South America")
         brat_document = BratDocument()
-        brat_document.add_annots(
-            annots=annots, text=text, keyword_attr="brat_type"
-        )
+        brat_document.add_annots(annots=annots, keyword_attr="brat_type")
         print(str(brat_document))
         # T1	CONTINENT 0 5;16 23	North America
         # #1	IAMSYSTEM T1	North America (NA)
@@ -487,10 +484,9 @@ class BratDocTest(unittest.TestCase):
 
         ent1 = Entity(label="North America", kb_id="NA")
         matcher = Matcher.build(keywords=[ent1], w=3)
-        text = "North and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="North and South America")
         doc = BratDocument()
-        doc.add_annots(annots, text=text, brat_type="CONTINENT")
+        doc.add_annots(annots=annots, brat_type="CONTINENT")
         temp_path = tempfile.mkdtemp()
         os.makedirs(temp_path, exist_ok=True)
         filename = os.path.join(temp_path, "docs.ann")
@@ -506,6 +502,85 @@ class BratDocTest(unittest.TestCase):
                 lines[0], "T1	CONTINENT 0 5;16 23	North America\n"
             )
             self.assertEqual(lines[1], "#1	IAMSYSTEM T1	North America (NA)\n")
+
+    def test_brat_default_formatter(self):
+        """Show default formatter"""
+        # start_test_brat_default_formatter
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(keywords=["North America"])
+        annots = matcher.annot_text(text="North America")
+        for annot in annots:
+            print(annot)
+        # North America	0 13	North America
+        # end_test_brat_default_formatter
+        self.assertEqual(str(annots[0]), "North America	0 13	North America")
+
+    def test_brat_individual_formatter(self):
+        """Show token per token formatter"""
+        # start_test_brat_individual_formatter
+        from iamsystem import IndividualTokenFormatter
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(keywords=["North America"])
+        annots = matcher.annot_text(text="North America")
+        formatter = IndividualTokenFormatter()
+        for annot in annots:
+            annot.brat_formatter = formatter
+            print(annot)
+        # North America	0 5;6 13	North America
+        # end_test_brat_individual_formatter
+        self.assertEqual(
+            str(annots[0]), "North America	0 5;6 13	North America"
+        )
+
+    def test_brat_tokenstop_formatter(self):
+        """Show adding stopwords when continuous in the sequence"""
+        # start_test_brat_tokenstop_formatter
+        from iamsystem import Entity
+        from iamsystem import Matcher
+        from iamsystem import TokenStopFormatter
+
+        matcher = Matcher.build(
+            keywords=[Entity(label="cancer de prostate", kb_id="C61")],
+            stopwords=["de", "la"],
+        )
+        annots = matcher.annot_text(text="cancer de la prostate")
+        formatter = TokenStopFormatter()
+        for annot in annots:
+            print(f"Default formatter: {annot}")
+            annot.brat_formatter = formatter
+            print(f"TokenStop formatter: {annot}")
+        # Default formatter: cancer prostate	0 6;13 21	cancer de prostate (C61) # noqa
+        # TokenStop formatter: cancer de la prostate	0 21	cancer de prostate (C61) # noqa
+        # end_test_brat_tokenstop_formatter
+        self.assertEqual(
+            str(annots[0]),
+            "cancer de la prostate	0 21	cancer de " "prostate (C61)",
+        )
+
+    def test_brat_span_formatter(self):
+        """Show creating a span from start to end of the annotation."""
+        # start_test_brat_span_formatter
+        from iamsystem import Matcher
+        from iamsystem import SpanFormatter
+
+        matcher = Matcher.build(
+            keywords=["North America"], stopwords=["and"], w=2
+        )
+        text = "North and South America"
+        annots = matcher.annot_text(text=text)
+        formatter = SpanFormatter(text=text)
+        for annot in annots:
+            print(f"Default formatter: {annot}")
+            annot.brat_formatter = formatter
+            print(f"Span formatter: {annot}")
+        # Default formatter: North America	0 5;16 23	North America
+        # Span formatter: North and South America	0 23	North America
+        # end_test_brat_span_formatter
+        self.assertEqual(
+            str(annots[0]), "North and South America	0 23	North America"
+        )
 
 
 class FuzzyDocTest(unittest.TestCase):
@@ -641,6 +716,7 @@ class FuzzyDocTest(unittest.TestCase):
         annots = matcher.annot_text(text="Absence de poils.")
         for annot in annots:
             print(annot)
+        # poils	11 16	poids
         matcher = Matcher.build(
             keywords=["poids"],
             spellwise=[
@@ -652,7 +728,6 @@ class FuzzyDocTest(unittest.TestCase):
             ],
             string_distance_ignored_w=["poils"],
         )
-        # poils	11 16	poids
         annots_2 = matcher.annot_text(text="Absence de poils.")
         for annot in annots_2:
             print(annot)  # 0
@@ -869,6 +944,43 @@ class SpacyDocTest(unittest.TestCase):
             print(span._.iamsystem)
         # ic gauche	0 9	Insuffisance Cardiaque Gauche (I50.1)
         # end_test_component
+
+
+class SpacyBuildTest(unittest.TestCase):
+    def test_spacy_readme_example(self):
+        """Spacy with readme example."""
+        # start_test_spacy_readme_example
+        from spacy.lang.fr import French
+
+        from iamsystem.spacy.component import IAMsystemBuildSpacy  # noqa
+
+        nlp = French()
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="iamsystem",
+            last=True,
+            config={
+                "build_params": {
+                    "keywords": [
+                        "North America",
+                        "South America",
+                    ],
+                    "abbreviations": [("amer", "America")],
+                    "stopwords": ["and"],
+                    "w": 2,
+                    "remove_nested_annots": True,
+                    "spellwise": [dict(max_distance=1, measure="Levenshtein")],
+                },
+            },
+        )
+        doc = nlp("Northh and South Amer.")
+        self.assertEqual(2, len(doc.spans["iamsystem"]))
+        spans = doc.spans["iamsystem"]
+        for span in spans:
+            print(span._.iamsystem)
+        # Northh Amer	0 6;17 21	North America
+        # South Amer	11 21	South America
+        # end_test_spacy_readme_example
 
 
 if __name__ == "__main__":

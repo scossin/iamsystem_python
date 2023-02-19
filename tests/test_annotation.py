@@ -4,9 +4,9 @@ from iamsystem.keywords.keywords import Entity
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import create_annot
 from iamsystem.matcher.annotation import is_ancestor_annot_of
+from iamsystem.matcher.annotation import linkedlist_to_list
 from iamsystem.matcher.annotation import rm_nested_annots
 from iamsystem.matcher.annotation import sort_annot
-from iamsystem.matcher.annotation import tokens_states_to_list
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.span import is_shorter_span_of
 from tests.utils_detector import get_gauche_el_in_ivg
@@ -149,7 +149,7 @@ class AnnotationTest(unittest.TestCase):
         gauche_node, gauche_el = get_gauche_el_in_ivg()
         ent = Entity("Insuffisance Cardiaque Gauche", "I50.1")
         gauche_node.add_keyword(ent)
-        annot: Annotation = create_annot(last_el=gauche_el)
+        annot: Annotation = create_annot(last_el=gauche_el, stop_tokens=[])
         self.assertEqual(3, len(annot._tokens))
         self.assertTrue(ent in annot.keywords)
         self.assertEqual(0, annot.start)
@@ -163,7 +163,7 @@ class AnnotationTest(unittest.TestCase):
         gauche_node, gauche_el = get_gauche_el_in_ivg()
         ent = Entity("Insuffisance Cardiaque Gauche", "I50.1")
         gauche_node.add_keyword(ent)
-        annot: Annotation = create_annot(last_el=gauche_el)
+        annot: Annotation = create_annot(last_el=gauche_el, stop_tokens=[])
         dic = annot.to_dict(text="Another text to check substring is working")
         self.assertEqual(dic["start"], 0)
         self.assertEqual(dic["end"], 34)
@@ -182,7 +182,7 @@ class AnnotationTest(unittest.TestCase):
     def test_tokens_states_to_list(self):
         """Linked list to list returns the right length."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
-        tokens_states = tokens_states_to_list(last_el=gauche_el)
+        tokens_states = linkedlist_to_list(last_el=gauche_el)
         self.assertEqual(3, len(tokens_states))
 
     def test_node_not_in_final_state(self):
@@ -190,4 +190,27 @@ class AnnotationTest(unittest.TestCase):
         (= node is a final state). Otherwise an exception is raised."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
         with (self.assertRaises(ValueError)):
-            create_annot(last_el=gauche_el)  # not in a final state
+            create_annot(last_el=gauche_el, stop_tokens=[])
+
+    def test_stop_tokens(self):
+        """the list of stop_tokens is correct."""
+        matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"]
+        )
+        annots = matcher.annot_text(text="cancer de la prostate")
+        self.assertEqual(2, len(annots[0].stop_tokens))
+
+    def test_stop_tokens_reverse(self):
+        """Stopwords z, x, y are inside the annotation but are the last
+        tokens when 'order_tokens=True'.It doesn't work if you try to filter
+        the stopwords before or in Annotation __init__."""
+        matcher = Matcher.build(
+            keywords=["cancer prostate"],
+            stopwords=["z", "y", "x", "a", "de"],
+            order_tokens=True,
+            w=3,
+        )
+        annots = matcher.annot_text(text="a prostate z x y cancer de")
+        self.assertEqual(3, len(annots[0].stop_tokens))
+        stopwords = [token.label for token in annots[0].stop_tokens]
+        self.assertEqual(stopwords, ["z", "x", "y"])

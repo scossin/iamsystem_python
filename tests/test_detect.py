@@ -92,7 +92,7 @@ class DetectTest(unittest.TestCase):
         annots_filt = rm_nested_annots(annots=annots, keep_ancestors=False)
         self.assertEqual(1, len(annots_filt))
         self.assertEqual(
-            annots_filt[0].norm_label, "insuffisance cardiaque gauche"
+            annots_filt[0].tokens_norm_label, "insuffisance cardiaque gauche"
         )
 
     def test_overlap_but_not_ancestors(self):
@@ -196,7 +196,7 @@ class DetectTest(unittest.TestCase):
     def test_token_type(self):
         """A custom token type with a POS property."""
         token_ins = TokenPOS(
-            start=0, end=4, label="ins", norm_label="ins", pos="NOUN"
+            start=0, end=4, label="ins", norm_label="ins", pos="NOUN", i=0
         )
         token_card = TokenPOS(
             start=0,
@@ -204,6 +204,7 @@ class DetectTest(unittest.TestCase):
             label="cardiaque",
             norm_label="cardiaque",
             pos="ADJ",
+            i=1,
         )
         tokens = [token_ins, token_card]
         fuzzy_lemma = FuzzyAlgoPos()
@@ -282,9 +283,15 @@ class TokenPOS(Token, IToken):
     """A custom token type to implement a custom FuzzyAlgo."""
 
     def __init__(
-        self, start: int, end: int, label: str, norm_label: str, pos: str
+        self,
+        start: int,
+        end: int,
+        label: str,
+        norm_label: str,
+        i: int,
+        pos: str,
     ):
-        super().__init__(start, end, label, norm_label)
+        super().__init__(start, end, label, norm_label, i)
         self.pos = pos
 
 
@@ -297,11 +304,10 @@ class FuzzyAlgoPos(FuzzyAlgo, ABC):
     def get_synonyms(
         self,
         tokens: Sequence[TokenPOS],
-        i: int,
+        token: TokenPOS,
         w_states: List[List[IState]],
     ) -> Iterable[SynAlgo]:
         """Returns only if POS is NOUN"""
-        token = tokens[i]
         if token.pos == "NOUN":
             yield self.word_to_syn("insuffisance"), self.name
         else:

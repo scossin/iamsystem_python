@@ -6,44 +6,7 @@ from typing import Tuple
 
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import IToken
-from iamsystem.tokenization.token import Offsets
-
-
-def merge_offsets(offsets_seq: Sequence[IOffsets]) -> Sequence[IOffsets]:
-    """Merge 2 or more offsets to a single offsets when continuous.
-    Ex: 2 4;5;20 => 2;20
-    """
-    # Why it is complicated to build a Brat format ? Brat handles
-    # discontinuous word. An example is: 0 5;16 23 where ";" indicates the
-    # presence of discontinuous tokens. With a sequence of offsets
-    # there is no easy way to know if the tokens are continuous are not.
-    # Hence, there are several solutions: 1) For
-    # each token, get its Brat format and concatenate them. The output may
-    # look like this : 0 5;6:20;21:23 This is the method implemented by the
-    # 'get_span_seq_id' function. This is similar to annotating token by
-    # token although the tokens are continuous in the text. 2) if the
-    # token's end offset + 1 matches the next token's start then 'merge'
-    # them. However, if there is an extraspace in the text,
-    # this method fails and returns an output similar to 1)
-    # 3) With the document in input, check if characters between token's end
-    # offset and next token's start are all empty characters.
-    # It solved problem of 2) but this mehtod fails if any stopword is removed.
-
-    # I choose to implement solution 2) which should work in most of the cases.
-    if len(offsets_seq) == 0:
-        raise ValueError("empty tokens list")
-    offsets: List[IOffsets] = [offsets_seq[0]]
-    for token in offsets_seq[1:]:
-        last_offset: IOffsets = offsets[-1]
-        if (
-            token.start == last_offset.end
-            or token.start == last_offset.end + 1
-        ):
-            merged_offset = Offsets(start=last_offset.start, end=token.end)
-            offsets[-1] = merged_offset  # offsets replacement.
-        else:
-            offsets.append(token)
-    return offsets
+from iamsystem.tokenization.tokenize import Offsets
 
 
 def offsets_overlap(a: IOffsets, b: IOffsets) -> bool:
@@ -73,16 +36,6 @@ def get_span_seq_id(offsets_seq: Sequence[IOffsets]):
     ]
     span_seq_id = ";".join(offsets_seq_id)
     return span_seq_id
-
-
-def get_min_start_offset(offsets_seq: Sequence[IOffsets]) -> int:
-    """Return the minimum start value in a sequence of offsets."""
-    return min(offsets.start for offsets in offsets_seq)
-
-
-def get_max_end_offset(offsets_seq: Sequence[IOffsets]) -> int:
-    """Return the max end value in a sequence of offsets."""
-    return max(offsets.end for offsets in offsets_seq)
 
 
 def concat_tokens_norm_label(tokens: Sequence[IToken]) -> str:
@@ -137,3 +90,57 @@ def itoken_to_dict(token: IToken):
         "label": token.label,
         "norm_label": token.norm_label,
     }
+
+
+def group_continuous_seq(tokens: List[IToken]) -> List[List[IToken]]:
+    """Group continuous sequences.
+    From a sequence of tokens, group tokens that follow each other by
+    their indice. Ex: [1,2,3,5,6] => [[1,2,3], [5,6]]"""
+    if len(tokens) == 0:
+        return []
+    tokens.sort(key=lambda t: t.i)
+    # 1) Split the sequence by missing indices
+    seq: List[IToken] = [tokens[0]]
+    sequences: List[List[IToken]] = [seq]
+    for token in tokens[1:]:
+        last_token = seq[-1]
+        if last_token.i + 1 == token.i:  # if continuous
+            seq.append(token)
+        else:  # discontinuous, create a new sequence
+            seq = [token]
+            sequences.append(seq)
+    return sequences
+
+
+def remove_trailing_stopwords(
+    sequences: List[List[IToken]], stop_i=List[int]
+) -> List[List[IToken]]:
+    """In each continuous sequence, we want to remove trailing stopwords.
+    Ex: [['North', 'and'], ['America']] -> [['North'], ['America']]
+
+    :param sequences: multiple continuous sequences
+    :param stop_i: stopwords indices
+    :return: sequences without trailing stopwords.
+    """
+    out_seq = []
+    for seq in sequences:
+        i_not_stop = [token.i for token in seq if token.i not in stop_i]
+        if len(i_not_stop) == 0:  # stopwords only in the sequence
+            continue
+        last_i = i_not_stop[-1]
+        out_seq.append(seq[: last_i + 1])
+    return out_seq
+
+
+def multiple_seq_to_offsets(sequences: List[List[IToken]]) -> List[IOffsets]:
+    """Create an Offsets for each continuous sequence, start being the
+        start offset of the first token in the sequence and
+        end being the end offset of the last token in the sequence.
+
+    :param sequences: multiple continuous sequences
+    :return: a list of offsets.
+    """
+    offsets: List[IOffsets] = [
+        Offsets(start=seq[0].start, end=seq[-1].end) for seq in sequences
+    ]
+    return offsets

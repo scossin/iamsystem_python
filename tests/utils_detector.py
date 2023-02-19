@@ -39,7 +39,7 @@ def get_gauche_el_in_ivg() -> Tuple[Node, TransitionState]:
     # insuffisance
     ins_node = Node(token="insuffisance", node_num=1, parent_node=root_node)
     ins_span = Token(
-        label="Insuffisance", norm_label="insuffisance", start=0, end=12
+        label="Insuffisance", norm_label="insuffisance", start=0, end=12, i=0
     )
     ins_el: TransitionState = TransitionState(
         node=ins_node, token=ins_span, parent=root_el, algos=["exact"]
@@ -47,14 +47,20 @@ def get_gauche_el_in_ivg() -> Tuple[Node, TransitionState]:
     # ventriculaire
     vent_node = Node(token="ventriculaire", node_num=2, parent_node=ins_node)
     vent_span = Token(
-        label="Ventriculaire", norm_label="ventriculaire", start=13, end=26
+        label="Ventriculaire",
+        norm_label="ventriculaire",
+        start=13,
+        end=26,
+        i=1,
     )
     vent_el: TransitionState = TransitionState(
         node=vent_node, token=vent_span, parent=ins_el, algos=["exact"]
     )
     # gauche
     gauche_node = Node(token="gauche", node_num=3, parent_node=vent_node)
-    gauche_span = Token(label="Gauche", norm_label="gauche", start=28, end=34)
+    gauche_span = Token(
+        label="Gauche", norm_label="gauche", start=28, end=34, i=2
+    )
     gauche_el: TransitionState = TransitionState(
         node=gauche_node, token=gauche_span, parent=vent_el, algos=["exact"]
     )

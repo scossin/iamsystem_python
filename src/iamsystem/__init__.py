@@ -3,6 +3,7 @@ __all__ = [
     "IMatcher",
     "IBaseMatcher",
     "Annotation",
+    "IAnnotation",
     "rm_nested_annots",
     "IStopwords",
     "Stopwords",
@@ -46,12 +47,21 @@ __all__ = [
     "StringDistance",
     "SimStringWrapper",
     "ESimStringMeasure",
+    "IBratFormatter",
+    "TokenFormatter",
+    "TokenStopFormatter",
+    "SpanFormatter",
+    "IndividualTokenFormatter",
 ]
 
 from iamsystem.brat.adapter import BratDocument
 from iamsystem.brat.adapter import BratEntity
 from iamsystem.brat.adapter import BratNote
 from iamsystem.brat.adapter import BratWriter
+from iamsystem.brat.formatter import IndividualTokenFormatter
+from iamsystem.brat.formatter import SpanFormatter
+from iamsystem.brat.formatter import TokenFormatter
+from iamsystem.brat.formatter import TokenStopFormatter
 from iamsystem.fuzzy.abbreviations import Abbreviations
 from iamsystem.fuzzy.abbreviations import token_is_upper_case
 from iamsystem.fuzzy.api import ContextFreeAlgo
@@ -75,7 +85,9 @@ from iamsystem.keywords.keywords import Keyword
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import replace_annots
 from iamsystem.matcher.annotation import rm_nested_annots
+from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IBaseMatcher
+from iamsystem.matcher.api import IBratFormatter
 from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.stopwords.api import IStopwords

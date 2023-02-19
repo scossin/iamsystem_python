@@ -13,7 +13,7 @@ from iamsystem.tokenization.api import ITokenizer
 
 
 class Terminology(IStoreKeywords):
-    """A utility class to store a set of keywords."""
+    """An utility class to store a set of keywords."""
 
     def __init__(self):
         self._keywords: List[IKeyword] = []

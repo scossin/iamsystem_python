@@ -16,7 +16,7 @@ from spacy.tokens import Span
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
-from iamsystem.matcher.annotation import Annotation
+from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.spacy.token import TokenSpacyAdapter
@@ -69,13 +69,13 @@ class BaseCustomComp(ABC):
     def process(self, doc) -> List[Span]:
         """Annotate a document. Call IAMsystem algorithm."""
         tokens = self.matcher.tokenize(text=doc)
-        anns: List[Annotation[TokenSpacyAdapter]] = self.matcher.annot_tokens(
+        anns: List[IAnnotation[TokenSpacyAdapter]] = self.matcher.annot_tokens(
             tokens=tokens
         )
         spacy_spans = []
         for ann in anns:
-            start_i = ann.tokens[0].spacy_token.i
-            end_i = ann.tokens[-1].spacy_token.i
+            start_i = ann.start_i
+            end_i = ann.end_i
             # 'A label to attach to the span, e.g. for named entities.'
             labels = [str(keyword) for keyword in ann.keywords]
             label = ";".join(labels)
@@ -128,7 +128,7 @@ class IAMsystemSpacy(BaseCustomComp):
         :param w: :class:`~iamsystem.Matcher`'s window parameter.
         :param remove_nested_annots: whether to remove nested annotations.
         :param stopwords: :class:`~iamsystem.IStopwords` instance.
-        :param norm_fun: a function that normalizes the 'norm_' attribute
+        :param norm_fun: a function that normalizes the 'norm\\_' attribute
             of a spaCy token, attribute used by iamsystem.
         :param attr: the attribute to store iamsystem's annotation in a spaCy
             span instance.
@@ -179,17 +179,17 @@ class IAMsystemBuildSpacy(BaseCustomComp):
             span instance.
         :param serialized_kw: a way to import serialized keywords.
             A dictionary containing 3 fields:
+
             - 'module': module name of the class to import. ex: 'iamsystem'.
             - 'class_name': the Keyword class to import.
-            - 'kw': an iterable of dict created with the asdict()
-                function.
-            If None, keywords are expected in 'build_params'. You will need
-            a registered function to import the keywords.
-        :param norm_fun: a function that normalizes the 'norm_' attribute
+            - 'kw': an iterable of dict created with the asdict() function.
+
+            If None, keywords are expected in 'build_params'.
+        :param norm_fun: a function that normalizes the 'norm\\_' attribute
             of a spaCy token, attribute used by iamsystem. Default to lower
             case and remove accents.
-        :param build_params: `~iamsystem.Matcher.build` parameters, the spacy
-            tokenizer will be used whatever the tokenizer value.
+        :param build_params: :py:meth:`~iamsystem.Matcher.build` parameters,
+            the spacy tokenizer will be used whatever the tokenizer value.
         """
 
         super().__init__(

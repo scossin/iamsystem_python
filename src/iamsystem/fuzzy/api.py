@@ -36,15 +36,18 @@ class ISynsProvider(Protocol[TokenT]):
 
     @abstractmethod
     def get_synonyms(
-        self, tokens: Sequence[TokenT], i: int, w_states: List[List[IState]]
+        self,
+        tokens: Sequence[TokenT],
+        token: TokenT,
+        w_states: List[List[IState]],
     ) -> Iterable[SynAlgos]:
         """Retrieve the synonyms of a token.
 
         :param tokens: the sequence of tokens of the document.
             Useful when the fuzzy algorithm needs context, namely the tokens
             around the token of interest given by 'i' parameter.
-        :param i: the ith token of this sequence for
-            which synonyms are expected.
+        :param token: the token of this sequence for which synonyms
+            are expected.
         :param w_states: the states in which the algorithm currently is.
             Useful is the fuzzy algorithm needs to know the current states
             and the possible state transitions.
@@ -90,7 +93,10 @@ class FuzzyAlgo(Generic[TokenT], ABC):
 
     @abstractmethod
     def get_synonyms(
-        self, tokens: Sequence[TokenT], i: int, w_states: List[List[IState]]
+        self,
+        tokens: Sequence[TokenT],
+        token: TokenT,
+        w_states: List[List[IState]],
     ) -> Iterable[SynAlgo]:
         """Main API function to retrieve all synonyms provided by
         a fuzzy algorithm.
@@ -98,8 +104,8 @@ class FuzzyAlgo(Generic[TokenT], ABC):
         :param tokens: the sequence of tokens of the document.
             Useful when the fuzzy algorithm needs context, namely the tokens
             around the token of interest given by 'i' parameter.
-        :param i: the ith token of this sequence for
-            which synonyms are expected.
+        :param token: the token of this sequence for which synonyms
+            are expected.
         :param w_states: the states in which the algorithm currently is.
             Useful is the fuzzy algorithm needs to know the current states
             and the possible state transitions.
@@ -124,10 +130,12 @@ class ContextFreeAlgo(FuzzyAlgo[TokenT], ABC):
         super().__init__(name)
 
     def get_synonyms(
-        self, tokens: Sequence[TokenT], i: int, w_states: List[List[IState]]
+        self,
+        tokens: Sequence[TokenT],
+        token: TokenT,
+        w_states: List[List[IState]],
     ) -> Iterable[SynAlgo]:
         """Delegate to get_syns_of_token."""
-        token = tokens[i]
         for syn in self.get_syns_of_token(token=token):
             yield syn, self.name
 

@@ -21,7 +21,7 @@ A limitation of passing words to the matcher is that no attributes are associate
 With a list of entities
 ^^^^^^^^^^^^^^^^^^^^^^^
 Often, keywords are derived from a knowledge graph that associates a label with a unique identifier.
-The :ref:`api_doc:Entity` has a *kb_id* attribute to store an identifier.
+The :ref:`api_doc:Entity` class has a *kb_id* attribute to store an identifier.
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
@@ -39,7 +39,7 @@ If you need to add other attributes to a keyword, you can create your own :ref:`
     :start-after: # start_test_exact_match_custom_keyword
     :end-before: # end_test_exact_match_custom_keyword
 
-Note you can add different keywords types.
+Note you can add different keyword types.
 
 Context window (w)
 ^^^^^^^^^^^^^^^^^^

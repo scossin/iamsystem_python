@@ -7,9 +7,11 @@ from iamsystem.brat.adapter import BratDocument
 from iamsystem.brat.adapter import BratEntity
 from iamsystem.brat.adapter import BratNote
 from iamsystem.brat.adapter import BratWriter
+from iamsystem.brat.formatter import IndividualTokenFormatter
+from iamsystem.brat.formatter import SpanFormatter
+from iamsystem.brat.formatter import TokenStopFormatter
 from iamsystem.brat.util import get_brat_format
 from iamsystem.brat.util import get_brat_format_seq
-from iamsystem.brat.util import merge_offsets_and_get_brat_format
 from iamsystem.keywords.keywords import Keyword
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
@@ -36,24 +38,16 @@ class BratUtilsTest(unittest.TestCase):
         span_id = get_brat_format_seq(self.tokens)
         self.assertEqual("0 7;8 19", span_id)
 
-    def test_merge_offsets_and_get_brat_format(self):
-        """Merge '0 7;8 19' to '0 19' because 7 is next to 8."""
-        brat_offset_format = merge_offsets_and_get_brat_format(self.tokens)
-        self.assertEqual("0 19", brat_offset_format)
-
-    def test_merge_offsets_and_get_brat_format_no_tokens(self):
-        """Exception is raised when list is empty."""
-        with self.assertRaises(ValueError):
-            merge_offsets_and_get_brat_format([])
-
 
 class BratEntityTest(unittest.TestCase):
     """Brat entity connector."""
 
     def setUp(self) -> None:
         self.entity_id = "T1"
-        self.offsets = [Offsets(0, 4)]
-        self.offsets_discontinuous = [Offsets(0, 4), Offsets(8, 12)]
+        self.offsets = get_brat_format_seq([Offsets(0, 4)])
+        self.offsets_discontinuous = get_brat_format_seq(
+            [Offsets(0, 4), Offsets(8, 12)]
+        )
         self.text = "hello"
         self.brat_type = "Person"
 
@@ -78,7 +72,7 @@ class BratEntityTest(unittest.TestCase):
         self.assertEqual("T1	Person 0 4;8 12	hello", str(brat_entity))
 
     def test_bad_entity_id(self):
-        """Entity id must start by 'T'."""
+        """Entity id must start by the letter T."""
         with self.assertRaises(ValueError):
             BratEntity(
                 entity_id="1",
@@ -86,6 +80,26 @@ class BratEntityTest(unittest.TestCase):
                 offsets=self.offsets,
                 text=self.text,
             )
+
+    def test_to_brat_format(self):
+        matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=2
+        )
+        annots = matcher.annot_text(text="cancer de la prostate")
+        self.assertEqual(annots[0].to_brat_format(), "0 6;13 21")
+        self.assertEqual(
+            str(annots[0]), "cancer prostate	0 6;13 21	cancer prostate"
+        )
+
+    def test_to_brat_format_leading_stop(self):
+        matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=2
+        )
+        annots = matcher.annot_text(text="cancer de la glande prostate")
+        self.assertEqual(annots[0].to_brat_format(), "0 6;20 28")
+        self.assertEqual(
+            str(annots[0]), "cancer prostate	0 6;20 28	cancer prostate"
+        )  # noqa
 
 
 class BraNoteTest(unittest.TestCase):
@@ -125,7 +139,7 @@ class MyEntity(Keyword):
 class BratDocumentTest(unittest.TestCase):
     def setUp(self) -> None:
         self.entity_id = "T1"
-        self.offsets = [Offsets(0, 4)]
+        self.offsets = get_brat_format_seq([Offsets(0, 4)])
         self.text = "hello"
         self.brat_type = "Person"
 
@@ -173,9 +187,7 @@ class BratDocumentTest(unittest.TestCase):
         matcher.w = 3
         annots = matcher.annot_text(text=self.text_america)
         brat_document = BratDocument()
-        brat_document.add_annots(
-            annots, text=self.text_america, brat_type="COUNTRY"
-        )
+        brat_document.add_annots(annots, brat_type="COUNTRY")
 
         self.assertEqual(
             "T1\tCOUNTRY 0 5;16 23\tNorth America\n#1\tIAMSYSTEM T1\tNorth "
@@ -187,14 +199,12 @@ class BratDocumentTest(unittest.TestCase):
         """keyword_attr or brat_type must be set. Raise if both None."""
         brat_document = BratDocument()
         with self.assertRaises(ValueError):
-            brat_document.add_annots(self.annots, text=self.text_america)
+            brat_document.add_annots(self.annots)
 
     def test_add_annots_brat_type(self):
         """The brat_type parameter value is in the string representation."""
         brat_document = BratDocument()
-        brat_document.add_annots(
-            self.annots, text=self.text_america, brat_type="COUNTRY"
-        )
+        brat_document.add_annots(self.annots, brat_type="COUNTRY")
         self.assertEqual(
             "T1\tCOUNTRY 0 5;16 23\tNorth America\nT2\tCOUNTRY 10 23\tSouth "
             "America",
@@ -208,10 +218,9 @@ class BratDocumentTest(unittest.TestCase):
         entity1 = MyEntity(label="France", brat_type="COUNTRY")
         entity2 = MyEntity(label="South America", brat_type="CONTINENT")
         matcher.add_keywords(keywords=[entity1, entity2])
-        text = "France and South America"
-        annots = matcher.annot_text(text=text)
+        annots = matcher.annot_text(text="France and South America")
         brat_document = BratDocument()
-        brat_document.add_annots(annots, text=text, keyword_attr="brat_type")
+        brat_document.add_annots(annots, keyword_attr="brat_type")
         self.assertEqual(
             "T1\tCOUNTRY 0 6\tFrance\nT2\tCONTINENT 11 24\tSouth America",
             brat_document.entities_to_string(),
@@ -220,9 +229,7 @@ class BratDocumentTest(unittest.TestCase):
     def test_brat_writer(self):
         """check save functions raise no error."""
         brat_document = BratDocument()
-        brat_document.add_annots(
-            self.annots, text=self.text_america, brat_type="COUNTRY"
-        )
+        brat_document.add_annots(self.annots, brat_type="COUNTRY")
         # filename = "./test.ann"
         # with(open(filename, 'w')) as p:
         # BratWriter.saveEntities(brat_entities=brat_document, write=p.write)
@@ -231,6 +238,75 @@ class BratDocumentTest(unittest.TestCase):
         )
         BratWriter.saveNotes(
             brat_notes=brat_document.get_notes(), write=lambda x: None
+        )
+
+    def test_similar_stopwords_window_strategy(self):
+        """Test stopwords and window strategies give the same output."""
+        matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=1
+        )
+        annots_stop = matcher.annot_text(text="cancer de la prostate")
+        matcher = Matcher.build(keywords=["cancer prostate"], w=3)
+        annots_w = matcher.annot_text(text="cancer de la prostate")
+        self.assertEqual(annots_stop[0].to_string(), annots_w[0].to_string())
+
+
+class BratFormatterTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.matcher = Matcher.build(
+            keywords=["cancer prostate"], stopwords=["de", "la"], w=2
+        )
+        self.text = "cancer de la glande prostate"
+        annots = self.matcher.annot_text(text=self.text)
+        self.annot = annots[0]
+
+    def test_default(self):
+        """Default is to group continuous sequence of tokens."""
+        self.assertEqual(
+            self.annot.to_string(), "cancer prostate	0 6;20 28	cancer prostate"
+        )
+
+    def test_stop_true(self):
+        """BratTokenAndStop remove trailing sequence of stopwords.
+        Here 'de', 'la' that are trailing thus removed."""
+        self.annot.brat_formatter = TokenStopFormatter()  # default True
+        self.assertEqual(
+            self.annot.to_string(), "cancer prostate	0 6;20 28	cancer prostate"
+        )
+
+    def test_stop_true_2(self):
+        """BratTokenAndStop remove trailing sequence of stopwords.
+        Here 'de', 'la' that are not trailing thus not removed."""
+        annots = self.matcher.annot_text(text="cancer de la prostate")
+        annot = annots[0]
+        annot.brat_formatter = TokenStopFormatter()  # default True
+        self.assertEqual(
+            annot.to_string(), "cancer de la prostate	0 21	cancer prostate"
+        )
+
+    def test_stop_false(self):
+        """Keep stopwords inside annotation, 'de', 'la' are present."""
+        self.annot.brat_formatter = TokenStopFormatter(False)
+        self.assertEqual(
+            self.annot.to_string(),
+            "cancer de la prostate	0 12;20 28	cancer prostate",
+        )
+
+    def test_span(self):
+        """Simply take start and end offsets of the annotation."""
+        self.annot.brat_formatter = SpanFormatter(text=self.text)
+        self.assertEqual(
+            self.annot.to_string(),
+            "cancer de la glande prostate	0 28	cancer prostate",
+        )
+
+    def test_individual(self):
+        """Check it outputs offsets for each token."""
+        annots = self.matcher.annot_text(text="cancer prostate")
+        annot = annots[0]
+        annot.brat_formatter = IndividualTokenFormatter()
+        self.assertEqual(
+            annot.to_string(), "cancer prostate	0 6;7 15	cancer prostate"
         )
 
 

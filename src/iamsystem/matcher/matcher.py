@@ -6,7 +6,6 @@ import warnings
 
 from collections import defaultdict
 from typing import Any
-from typing import Callable
 from typing import Collection
 from typing import Dict
 from typing import Iterable
@@ -55,9 +54,6 @@ from iamsystem.tokenization.tokenize import tokenize_and_order_decorator
 from iamsystem.tree.nodes import EMPTY_NODE
 from iamsystem.tree.nodes import INode
 from iamsystem.tree.trie import Trie
-
-
-filter_fun = Callable[[Annotation[TokenT]], Annotation[TokenT]]
 
 
 class Matcher(IMatcher[TokenT]):
@@ -263,19 +259,22 @@ class Matcher(IMatcher[TokenT]):
         return self._trie.get_initial_state()
 
     def get_synonyms(
-        self, tokens: Sequence[TokenT], i: int, w_states: List[List[IState]]
+        self,
+        tokens: Sequence[TokenT],
+        token: TokenT,
+        w_states: List[List[IState]],
     ) -> Iterable[SynAlgos]:
         """Get synonyms of a token with configured fuzzy algorithms.
 
         :param tokens: document's tokens.
-        :param i: the ith token for which synonyms are expected.
+        :param token: the token for which synonyms are expected.
         :param w_states: algorithm's states.
         :return: tuples of synonyms and fuzzy algorithm's names.
         """
         syns_collector = defaultdict(list)
         for algo in self.fuzzy_algos:
             for syn, algo_name in algo.get_synonyms(
-                tokens=tokens, i=i, w_states=w_states
+                tokens=tokens, token=token, w_states=w_states
             ):
                 syns_collector[syn].append(algo_name)
         synonyms: List[SynAlgos] = list(syns_collector.items())
@@ -335,7 +334,7 @@ class Matcher(IMatcher[TokenT]):
             A :class:`~iamsystem.ITokenizer` instance responsible for
             tokenizing and normalizing.
         :param stopwords: provide a :class:`~iamsystem.IStopwords`.
-            If None, default to :class:`~iamsystem.Stopwords`.
+            If None, default to :class:`~iamsystem.NoStopwords`.
         :param w: Window. How much discontinuous keyword's tokens
             to find can be. By default, w=1 means the sequence must be
             continuous. w=2 means each token can be separated by another token.
@@ -343,18 +342,18 @@ class Matcher(IMatcher[TokenT]):
             matter in the matching strategy.
         :param negative: every unigram not in the keywords is a stopword.
             Default to False. If stopwords are also passed, they will be
-            removed in the unigrams and so still be stopwords.
+            removed from keywords' tokens and so still be stopwords.
         :param remove_nested_annots: if two annotations overlap,
-            remove the shorter one. Default to True
+            remove the shorter one. Default to True.
         :param string_distance_ignored_w: words ignored by string distance
             algorithms to avoid false positives matched.
         :param abbreviations: an iterable of tuples (short_form, long_form).
         :param spellwise: an iterable of :class:`~iamsystem.SpellWiseWrapper`
             init parameters. if 'string_distance_ignored_w' is set, these words
-            parameter will be passed.
+            are passed to SpellWiseWrapper init function.
         :param simstring: an iterable of :class:`~iamsystem.SimStringWrapper`
             init parameters. if 'string_distance_ignored_w' is set, these words
-            parameter will be passed.
+            are passed to SimStringWrapper init function.
         :param normalizers: an iterable of :class:`~iamsystem.WordNormalizer`
             init parameters.
         :param fuzzy_regex: an iterable of :class:`~iamsystem.FuzzyRegex`
@@ -365,16 +364,14 @@ class Matcher(IMatcher[TokenT]):
         if tokenizer is None:
             tokenizer = french_tokenizer()
 
+        # Decorate tokenize function to order alphabetically
         if order_tokens:
             tokenizer.tokenize = tokenize_and_order_decorator(
                 tokenizer.tokenize
             )
 
         # Start building and configuring the matcher
-
         matcher = Matcher(tokenizer=tokenizer)
-        # Decorate tokenize function to order alphabetically
-        matcher.order_tokens = order_tokens
 
         # Configure stopwords
         if isinstance(stopwords, Iterable):
@@ -401,9 +398,7 @@ class Matcher(IMatcher[TokenT]):
         def _add_algo_in_cache_closure(
             cache: CacheFuzzyAlgos, matcher: Matcher
         ):
-            """Internal build function to add cache_fuzzy algorithm to the
-            list of fuzzy algorithms the first time an algorithm is added in
-            cache."""
+            """Internal function to add cache_fuzzy algorithm to cache"""
 
             def add_algo_in_cache(algo=INormLabelAlgo):
                 """Add an algorithm in cache."""
@@ -510,12 +505,14 @@ def detect(
     w_states[w] = [start_state]
     # different from i for a stopword-independent window size.
     count_not_stopword = 0
+    stop_tokens: List[TokenT] = []
     for i, token in enumerate(tokens):
         if stopwords.is_token_a_stopword(token):
+            stop_tokens.append(token)
             continue
         count_not_stopword += 1
         syns_algos: Iterable[SynAlgos] = syns_provider.get_synonyms(
-            tokens=tokens, i=i, w_states=w_states
+            tokens=tokens, token=token, w_states=w_states
         )
         # stores matches between document's tokens and keywords'tokens.
         tokens_states: List[TransitionState] = []
@@ -534,7 +531,9 @@ def detect(
                     )
                     tokens_states.append(token_state)
                     if new_state.is_a_final_state():
-                        annot = create_annot(last_el=token_state)
+                        annot = create_annot(
+                            last_el=token_state, stop_tokens=stop_tokens
+                        )
                         annots.append(annot)
         # function 'count_not_stopword % w' has range [0 ; w-1]
         w_states[count_not_stopword % w].clear()

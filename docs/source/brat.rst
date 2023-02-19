@@ -7,6 +7,56 @@ Brat
 This package provides a Brat adapter to generate Brat annotation files (.ann extension)
 in order to visualise iamsystem's annotations in the Brat web interface.
 
+Brat Formatter
+^^^^^^^^^^^^^^
+
+Given a sequence of tokens, there are several ways of creating a Brat annotation.
+The default Brat formatter groups continuous sequence of tokens:
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_brat_default_formatter
+    :end-before: # end_test_brat_default_formatter
+
+Indeed, "North America" has two tokens, "North" and "America" but a continuous annotation (0 13) is created.
+
+In order to have one Brat span for each token, you can use the :ref:`api_doc:IndividualTokenFormatter`:
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_brat_individual_formatter
+    :end-before: # end_test_brat_individual_formatter
+
+If you have stopwords in your matching sequences, you can include them in the Brat annotation using
+:ref:`api_doc:TokenStopFormatter`.
+Stopwords are included if and only if they form a continuous sequence of tokens.
+Check the differences:
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_brat_tokenstop_formatter
+    :end-before: # end_test_brat_tokenstop_formatter
+
+If your match is a discontinuous sequence of tokens and you want a **continuous Brat annotation** from the start offsets of
+the first token and end offsets of the last token, you can use the :ref:`api_doc:SpanFormatter`.
+Check the differences:
+
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :linenos:
+    :start-after: # start_test_brat_span_formatter
+    :end-before: # end_test_brat_span_formatter
+
+
+
+
 Brat Document
 ^^^^^^^^^^^^^
 

@@ -44,10 +44,12 @@ class CacheFuzzyAlgos(FuzzyAlgo, Generic[TokenT]):
         self.cache = {}
 
     def get_synonyms(
-        self, tokens: Sequence[IToken], i: int, w_states: List[List[IState]]
+        self,
+        tokens: Sequence[IToken],
+        token: TokenT,
+        w_states: List[List[IState]],
     ) -> List[SynAlgo]:
         """Implements superclass abstract method."""
-        token = tokens[i]
         word = token.norm_label
         return self.get_syns_of_word(word=word)
 
