@@ -133,14 +133,13 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
 
     def to_string(self, text: str = None, debug=False) -> str:
         """Get a default string representation of this object.
+
         :param text: the document from which this annotation comes from.
-         Default to None. If set, add the document substring: text[
-         first-token-start-offset : last-token-end-offset].
-        :param debug:
-         default to False. If True, add the sequence of tokens and fuzzyalgo
-         names.
-        :return: a concatenated string of 'keywords'\t'start'
-         'end'\t'substring'?\t'debug_info'?
+            Default to None. If set, add the document substring:
+            text[first-token-start-offset : last-token-end-offset].
+        :param debug: default to False. If True, add the sequence of tokens
+            and fuzzyalgo names.
+        :return: a concatenated string
         """
         text_span, offsets = self._brat_formatter.get_text_and_offsets(
             annot=self

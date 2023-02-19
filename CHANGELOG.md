@@ -1,5 +1,24 @@
 # ChangeLog
 
+## Version 0.3.0 (beta)
+
+### Breaking changes
+
+- IToken interface: add a 'i' attribute, the token index.
+- FuzzyAlgo: replace 'i', the index of the token for which synonyms are
+expected by the token: since token has now a 'i' attribute, it's possible to
+retrieve its context tokens.
+- BratDocument: remove "text" parameter. This parameter is now handled by the
+annotation's brat_formatter.
+
+### Enhancement
+
+- BratFormatter: the user can set how to create a Brat annotation.
+- IAnnotation interface added.
+- The list of stopwords are added to each annotation instance.
+It allows to keep information on the matching strategy and to know the importance of stopwords in the detection.
+
+
 ## Version 0.2.0 (beta)
 
 ### Breaking changes

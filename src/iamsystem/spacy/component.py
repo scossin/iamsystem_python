@@ -128,7 +128,7 @@ class IAMsystemSpacy(BaseCustomComp):
         :param w: :class:`~iamsystem.Matcher`'s window parameter.
         :param remove_nested_annots: whether to remove nested annotations.
         :param stopwords: :class:`~iamsystem.IStopwords` instance.
-        :param norm_fun: a function that normalizes the 'norm_' attribute
+        :param norm_fun: a function that normalizes the 'norm\\_' attribute
             of a spaCy token, attribute used by iamsystem.
         :param attr: the attribute to store iamsystem's annotation in a spaCy
             span instance.
@@ -183,8 +183,9 @@ class IAMsystemBuildSpacy(BaseCustomComp):
             - 'module': module name of the class to import. ex: 'iamsystem'.
             - 'class_name': the Keyword class to import.
             - 'kw': an iterable of dict created with the asdict() function.
+
             If None, keywords are expected in 'build_params'.
-        :param norm_fun: a function that normalizes the 'norm_' attribute
+        :param norm_fun: a function that normalizes the 'norm\\_' attribute
             of a spaCy token, attribute used by iamsystem. Default to lower
             case and remove accents.
         :param build_params: :py:meth:`~iamsystem.Matcher.build` parameters,

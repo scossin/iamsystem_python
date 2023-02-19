@@ -17,7 +17,7 @@ class TokenSpacyAdapter(IToken):
         """Create a iamsystem's token from a spaCy token.
 
         :param spacy_token: a spacy.tokens instance.
-        :param norm_fun: a function that normalizes the 'norm_' attribute
+        :param norm_fun: a function that normalizes the 'norm\\_' attribute
             of a spaCy token, attribute used by iamsystem.
         """
         self.spacy_token = spacy_token
