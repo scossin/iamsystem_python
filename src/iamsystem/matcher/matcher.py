@@ -259,19 +259,22 @@ class Matcher(IMatcher[TokenT]):
         return self._trie.get_initial_state()
 
     def get_synonyms(
-        self, tokens: Sequence[TokenT], i: int, w_states: List[List[IState]]
+        self,
+        tokens: Sequence[TokenT],
+        token: TokenT,
+        w_states: List[List[IState]],
     ) -> Iterable[SynAlgos]:
         """Get synonyms of a token with configured fuzzy algorithms.
 
         :param tokens: document's tokens.
-        :param i: the ith token for which synonyms are expected.
+        :param token: the token for which synonyms are expected.
         :param w_states: algorithm's states.
         :return: tuples of synonyms and fuzzy algorithm's names.
         """
         syns_collector = defaultdict(list)
         for algo in self.fuzzy_algos:
             for syn, algo_name in algo.get_synonyms(
-                tokens=tokens, i=i, w_states=w_states
+                tokens=tokens, token=token, w_states=w_states
             ):
                 syns_collector[syn].append(algo_name)
         synonyms: List[SynAlgos] = list(syns_collector.items())
@@ -509,7 +512,7 @@ def detect(
             continue
         count_not_stopword += 1
         syns_algos: Iterable[SynAlgos] = syns_provider.get_synonyms(
-            tokens=tokens, i=i, w_states=w_states
+            tokens=tokens, token=token, w_states=w_states
         )
         # stores matches between document's tokens and keywords'tokens.
         tokens_states: List[TransitionState] = []

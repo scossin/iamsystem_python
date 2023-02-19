@@ -304,11 +304,10 @@ class FuzzyAlgoPos(FuzzyAlgo, ABC):
     def get_synonyms(
         self,
         tokens: Sequence[TokenPOS],
-        i: int,
+        token: TokenPOS,
         w_states: List[List[IState]],
     ) -> Iterable[SynAlgo]:
         """Returns only if POS is NOUN"""
-        token = tokens[i]
         if token.pos == "NOUN":
             yield self.word_to_syn("insuffisance"), self.name
         else:
