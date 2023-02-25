@@ -194,6 +194,7 @@ class MatcherTest(unittest.TestCase):
         self.assertEqual(1, len(annots))
 
     def test_keywords_iterator(self):
+        """Test it's possible to iterate over keywords."""
         matcher = Matcher()
         termino = Terminology()
         ent = Entity(label="ulcères gastriques", kb_id="K25")
@@ -202,6 +203,18 @@ class MatcherTest(unittest.TestCase):
         matcher.add_keywords(keywords=keyword_iter)
         annots = matcher.annot_text(text="ulcères gastriques")
         self.assertEqual(1, len(annots))
+
+    def test_duplicate_states_generate_lot_of_overlaps(self):
+        """https://github.com/scossin/iamsystem_python/issues/11
+        If the algorithm takes all possible paths then it outputs 16
+        annotations. By storing algorithms' states in a set rather than in
+        an array, an existing state is replaced.
+        """
+        matcher = Matcher.build(keywords=["cancer de la prostate"], w=3)
+        annots = matcher.annot_text(
+            text="cancer cancer de de la la prostate prostate"
+        )
+        self.assertEqual(len(annots), 1)
 
 
 class AnotherFuzzyAlgo(NormLabelAlgo):
