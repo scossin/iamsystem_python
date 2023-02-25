@@ -82,6 +82,7 @@ class BratEntityTest(unittest.TestCase):
             )
 
     def test_to_brat_format(self):
+        """to_brat_format function performs a per token annotation."""
         matcher = Matcher.build(
             keywords=["cancer prostate"], stopwords=["de", "la"], w=2
         )
@@ -92,6 +93,7 @@ class BratEntityTest(unittest.TestCase):
         )
 
     def test_to_brat_format_leading_stop(self):
+        """Leading stopwords are removed from a discontinuous sequence."""
         matcher = Matcher.build(
             keywords=["cancer prostate"], stopwords=["de", "la"], w=2
         )
@@ -133,6 +135,7 @@ class MyEntity(Keyword):
     brat_type: str
 
     def __str__(self):
+        """Concatenate the label and brat type for the test."""
         return f"{self.label} ({self.brat_type})"
 
 
