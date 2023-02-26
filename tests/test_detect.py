@@ -14,7 +14,7 @@ from iamsystem.fuzzy.spellwise import SpellWiseWrapper
 from iamsystem.matcher.annotation import rm_nested_annots
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.matcher.matcher import detect
-from iamsystem.matcher.util import IState
+from iamsystem.matcher.util import LinkedState
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.simple import Stopwords
 from iamsystem.tokenization.api import IToken
@@ -305,7 +305,7 @@ class FuzzyAlgoPos(FuzzyAlgo, ABC):
         self,
         tokens: Sequence[TokenPOS],
         token: TokenPOS,
-        w_states: List[List[IState]],
+        states: List[List[LinkedState]],
     ) -> Iterable[SynAlgo]:
         """Returns only if POS is NOUN"""
         if token.pos == "NOUN":

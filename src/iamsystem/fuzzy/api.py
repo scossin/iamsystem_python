@@ -8,6 +8,7 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Set
 from typing import Tuple
 
 from typing_extensions import Protocol
@@ -15,9 +16,8 @@ from typing_extensions import runtime_checkable
 
 from iamsystem.fuzzy.util import IWords2ignore
 from iamsystem.fuzzy.util import SimpleWords2ignore
-from iamsystem.matcher.util import IState
+from iamsystem.matcher.util import LinkedState
 from iamsystem.tokenization.api import TokenT
-from iamsystem.tree.nodes import INode
 
 
 # Synonym type. Ex: ('insuffisance','cardiaque')
@@ -39,8 +39,8 @@ class ISynsProvider(Protocol[TokenT]):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        w_states: List[List[IState]],
-    ) -> Iterable[SynAlgos]:
+        states: Set[LinkedState],
+    ) -> List[SynAlgos]:
         """Retrieve the synonyms of a token.
 
         :param tokens: the sequence of tokens of the document.
@@ -48,7 +48,7 @@ class ISynsProvider(Protocol[TokenT]):
             around the token of interest given by 'i' parameter.
         :param token: the token of this sequence for which synonyms
             are expected.
-        :param w_states: the states in which the algorithm currently is.
+        :param states: the states in which the algorithm currently is.
             Useful is the fuzzy algorithm needs to know the current states
             and the possible state transitions.
         :return: 0 to many synonyms.
@@ -59,7 +59,7 @@ class ISynsProvider(Protocol[TokenT]):
 class FuzzyAlgo(Generic[TokenT], ABC):
     """Fuzzy Algorithm base class."""
 
-    NO_SYN: Iterable[SynType] = []  #
+    NO_SYN: Iterable[SynType] = []
     "Default value to return by a fuzzy algorithm if no synonym found."
 
     def __init__(self, name: str):
@@ -96,8 +96,8 @@ class FuzzyAlgo(Generic[TokenT], ABC):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        w_states: List[List[IState]],
-    ) -> Iterable[SynAlgo]:
+        states: Set[LinkedState],
+    ) -> List[SynAlgo]:
         """Main API function to retrieve all synonyms provided by
         a fuzzy algorithm.
 
@@ -106,20 +106,12 @@ class FuzzyAlgo(Generic[TokenT], ABC):
             around the token of interest given by 'i' parameter.
         :param token: the token of this sequence for which synonyms
             are expected.
-        :param w_states: the states in which the algorithm currently is.
+        :param states: the states in which the algorithm currently is.
             Useful is the fuzzy algorithm needs to know the current states
             and the possible state transitions.
         :return: 0 to many synonyms (SynAlgo type).
         """
         raise NotImplementedError
-
-
-def get_possible_transitions(w_states: List[List[IState]]) -> Iterable[INode]:
-    """Return all the states (nodes) where the algorithm can go."""
-    for states in w_states:
-        for state in states:
-            for child_nodes in state.node.get_child_nodes():
-                yield child_nodes
 
 
 class ContextFreeAlgo(FuzzyAlgo[TokenT], ABC):
@@ -133,11 +125,12 @@ class ContextFreeAlgo(FuzzyAlgo[TokenT], ABC):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        w_states: List[List[IState]],
-    ) -> Iterable[SynAlgo]:
+        states: Set[LinkedState],
+    ) -> List[SynAlgo]:
         """Delegate to get_syns_of_token."""
-        for syn in self.get_syns_of_token(token=token):
-            yield syn, self.name
+        return [
+            (syn, self.name) for syn in self.get_syns_of_token(token=token)
+        ]
 
     @abstractmethod
     def get_syns_of_token(self, token: TokenT) -> Iterable[SynType]:
@@ -194,11 +187,9 @@ class StringDistance(NormLabelAlgo, ABC):
         """
         super().__init__(name)
         self._min_nb_char = min_nb_char
-        self._tokens2ignore: IWords2ignore
-        if words2ignore is None:
-            self._tokens2ignore = SimpleWords2ignore()
-        else:
-            self._tokens2ignore = words2ignore
+        self._tokens2ignore: IWords2ignore = (
+            words2ignore or SimpleWords2ignore()
+        )
 
     @property
     def min_nb_char(self):

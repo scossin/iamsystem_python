@@ -13,8 +13,7 @@ from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IBratFormatter
-from iamsystem.matcher.util import TransitionState
-from iamsystem.tokenization.api import IToken
+from iamsystem.matcher.util import LinkedState
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.span import Span
 from iamsystem.tokenization.span import is_shorter_span_of
@@ -72,7 +71,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         return self.tokens_label
 
     @property
-    def stop_tokens(self) -> List[IToken]:
+    def stop_tokens(self) -> List[TokenT]:
         """The list of stopwords tokens inside the annotation detected by
         the Matcher stopwords instance."""
         # Note that _stop_tokens are stopwords of the document. The reason to
@@ -202,6 +201,7 @@ def rm_nested_annots(annots: List[Annotation], keep_ancestors=False):
     # executed.
     ancest_indices = set()
     short_indices = set()
+    # count = 0
     for i, annot in enumerate(annots):
         for _y, other in enumerate(annots[(i + 1) :]):  # noqa
             y = _y + i + 1  # y is the indice of other in annots list.
@@ -214,6 +214,8 @@ def rm_nested_annots(annots: List[Annotation], keep_ancestors=False):
                     ancest_indices.add(i)
             if is_shorter_span_of(other, annot):
                 short_indices.add(y)
+            # count += 1
+    # print(f"count:{count}")
     if keep_ancestors:
         indices_2_remove = set(
             [i for i in short_indices if i not in ancest_indices]
@@ -228,14 +230,14 @@ def rm_nested_annots(annots: List[Annotation], keep_ancestors=False):
 
 
 def create_annot(
-    last_el: TransitionState, stop_tokens: List[TokenT]
+    last_el: LinkedState, stop_tokens: List[TokenT]
 ) -> Annotation:
     """last_el contains a sequence of tokens in text and a final state (a
     matcher keyword)."""
     if not last_el.node.is_a_final_state():
         raise ValueError("Last element is not a final state.")
+    last_state = last_el.node
     trans_states = linkedlist_to_list(last_el)
-    last_state = trans_states[-1].node
     # order by token indice. Note that last node is not last anymore.
     trans_states.sort(key=lambda x: x.token.i)
     tokens: List[TokenT] = [t.token for t in trans_states]
@@ -253,16 +255,16 @@ def create_annot(
     return annot
 
 
-def linkedlist_to_list(last_el: TransitionState) -> List[TransitionState]:
+def linkedlist_to_list(last_el: LinkedState) -> List[LinkedState]:
     """Convert a linked list to a list."""
-    trans_states: List[TransitionState] = [last_el]
+    states: List[LinkedState] = [last_el]
     parent = last_el.parent
-    # it stops when reaching the initial state.
-    while isinstance(parent, TransitionState):
-        trans_states.append(parent)
+    # it stops when reaching the initial state which parent is None.
+    while parent.parent is not None:
+        states.append(parent)
         parent = parent.parent
-    trans_states.reverse()
-    return trans_states
+    states.reverse()
+    return states
 
 
 def replace_annots(

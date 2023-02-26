@@ -8,7 +8,10 @@ from iamsystem.matcher.annotation import linkedlist_to_list
 from iamsystem.matcher.annotation import rm_nested_annots
 from iamsystem.matcher.annotation import sort_annot
 from iamsystem.matcher.matcher import Matcher
+from iamsystem.matcher.util import LinkedState
+from iamsystem.matcher.util import create_start_state
 from iamsystem.tokenization.span import is_shorter_span_of
+from iamsystem.tree.trie import Trie
 from tests.utils_detector import get_gauche_el_in_ivg
 
 
@@ -157,6 +160,45 @@ class AnnotationTest(unittest.TestCase):
         self.assertEqual("Insuffisance Ventriculaire Gauche", annot.label)
         substring = text[annot.start : annot.end]  # noqa
         self.assertEqual("Insuffisance Ventriculaire  Gauche", substring)
+
+    def test_create_start_state(self):
+        """When parent is none, it's the start_state"""
+        trie = Trie()
+        start_state = create_start_state(
+            initial_state=trie.get_initial_state()
+        )
+        self.assertTrue(start_state.parent is None)
+
+    def test_transition_state_equality(self):
+        """Two transititions states are 'equal' if they have the same
+        node number. This equality is important since a 'new' state needs to
+        override an existing state."""
+        gauche_node, gauche_el = get_gauche_el_in_ivg()
+        trans_state_0 = LinkedState(
+            parent=None,
+            node=gauche_node,
+            token=self.annots[0].tokens[0],
+            algos=["one"],
+            w_bucket=0,
+        )
+        start_state = create_start_state(
+            initial_state=Trie().get_initial_state()
+        )
+        trans_state_1 = LinkedState(
+            parent=start_state,
+            node=gauche_node,
+            token=None,  # noqa
+            algos=["one"],
+            w_bucket=0,
+        )
+        self.assertEqual(trans_state_0, trans_state_1)
+        trans_set = set()
+        trans_set.add(trans_state_0)
+        trans_set.discard(trans_state_1)
+        trans_set.add(trans_state_1)
+        self.assertEqual(len(trans_set), 1)
+        for trans in trans_set:
+            self.assertTrue(trans.token is None)  # trans_state_1 overrides
 
     def test_to_dict(self):
         """Check attribute values."""

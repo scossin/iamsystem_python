@@ -215,6 +215,24 @@ class MatcherTest(unittest.TestCase):
             text="cancer cancer de de la la prostate prostate"
         )
         self.assertEqual(len(annots), 1)
+        self.assertEqual(
+            str(annots[0]),
+            "cancer de la prostate	7 13;17 19;23 34	cancer de la prostate",
+        )
+
+    def test_duplicate_states_annotations_created(self):
+        """Check it creates two annotations, one for the first occurence of
+        'cancer', the next one using the last occurence of 'cancer'."""
+        matcher = Matcher.build(
+            keywords=["cancer", "cancer de la prostate"], w=10
+        )
+        annots = matcher.annot_text(text="cancer cancer cancer de la prostate")
+        self.assertEqual(len(annots), 2)
+        self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
+        self.assertEqual(
+            str(annots[1]),
+            "cancer de la prostate	14 35	cancer de la prostate",
+        )
 
 
 class AnotherFuzzyAlgo(NormLabelAlgo):

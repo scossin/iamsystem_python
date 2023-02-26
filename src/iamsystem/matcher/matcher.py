@@ -38,9 +38,8 @@ from iamsystem.matcher.annotation import create_annot
 from iamsystem.matcher.annotation import rm_nested_annots
 from iamsystem.matcher.annotation import sort_annot
 from iamsystem.matcher.api import IMatcher
-from iamsystem.matcher.util import IState
-from iamsystem.matcher.util import StartState
-from iamsystem.matcher.util import TransitionState
+from iamsystem.matcher.util import LinkedState
+from iamsystem.matcher.util import create_start_state
 from iamsystem.stopwords.api import ISimpleStopwords
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.api import IStoreStopwords
@@ -262,19 +261,19 @@ class Matcher(IMatcher[TokenT]):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        w_states: List[List[IState]],
-    ) -> Iterable[SynAlgos]:
+        states: Set[LinkedState],
+    ) -> List[SynAlgos]:
         """Get synonyms of a token with configured fuzzy algorithms.
 
         :param tokens: document's tokens.
         :param token: the token for which synonyms are expected.
-        :param w_states: algorithm's states.
+        :param states: algorithm's states.
         :return: tuples of synonyms and fuzzy algorithm's names.
         """
         syns_collector = defaultdict(list)
         for algo in self.fuzzy_algos:
             for syn, algo_name in algo.get_synonyms(
-                tokens=tokens, token=token, w_states=w_states
+                tokens=tokens, token=token, states=states
             ):
                 syns_collector[syn].append(algo_name)
         synonyms: List[SynAlgos] = list(syns_collector.items())
@@ -320,10 +319,10 @@ class Matcher(IMatcher[TokenT]):
         remove_nested_annots=True,
         string_distance_ignored_w: Optional[Iterable[str]] = None,
         abbreviations: Optional[Iterable[Tuple[str, str]]] = None,
-        spellwise: Optional[List[Dict[Any]]] = None,
-        simstring: Optional[List[Dict[Any]]] = None,
-        normalizers: Optional[List[Dict[Any]]] = None,
-        fuzzy_regex: Optional[List[Dict[Any]]] = None,
+        spellwise: Optional[List[Dict[Any, Any]]] = None,
+        simstring: Optional[List[Dict[Any, Any]]] = None,
+        normalizers: Optional[List[Dict[Any, Any]]] = None,
+        fuzzy_regex: Optional[List[Dict[Any, Any]]] = None,
     ) -> Matcher[TokenT]:
         """
         Create an IAMsystem matcher to annotate documents.
@@ -371,7 +370,7 @@ class Matcher(IMatcher[TokenT]):
             )
 
         # Start building and configuring the matcher
-        matcher = Matcher(tokenizer=tokenizer)
+        matcher: Matcher[TokenT] = Matcher(tokenizer=tokenizer)
 
         # Configure stopwords
         if isinstance(stopwords, Iterable):
@@ -460,9 +459,9 @@ class Matcher(IMatcher[TokenT]):
                 # don't override user's 'words2ignore':
                 if "words2ignore" not in params:
                     params["words2ignore"] = words2ignore
-                spellwise = SpellWiseWrapper(**params)
-                spellwise.add_words(words=matcher.get_keywords_unigrams())
-                add_algo_in_cache(algo=spellwise)
+                algo = SpellWiseWrapper(**params)
+                algo.add_words(words=matcher.get_keywords_unigrams())
+                add_algo_in_cache(algo=algo)
 
         # Parameterize simstring
         if simstring is not None:
@@ -498,48 +497,70 @@ def detect(
     :return: A list of :class:`~iamsystem.Annotation`.
     """
     annots: List[Annotation] = []
-    # +1 to insert the start_state.
-    w_states: List[List[IState]] = [[]] * (w + 1)
-    start_state = StartState(node=initial_state)
-    # [w] element stores only the start_state. This element is not replaced.
-    w_states[w] = [start_state]
-    # different from i for a stopword-independent window size.
+    # states stores linkedstate instance that keeps track of a tree path
+    # and document's tokens that matched.
+    states: Set[LinkedState] = set()
+    start_state = create_start_state(initial_state=initial_state)
+    states.add(start_state)
+    # count_not_stopword allows a stopword-independent window size.
     count_not_stopword = 0
     stop_tokens: List[TokenT] = []
+    new_states: List[LinkedState] = []
+    # states2remove store states that will be out-of-reach
+    # at next iteration.
+    states2remove: List[LinkedState] = []
     for i, token in enumerate(tokens):
         if stopwords.is_token_a_stopword(token):
             stop_tokens.append(token)
             continue
+        # w_bucket stores when a state will be out-of-reach given window size
+        # 'count_not_stopword % w' has range [0 ; w-1]
+        w_bucket = count_not_stopword % w
+        new_states.clear()
+        states2remove.clear()
         count_not_stopword += 1
-        syns_algos: Iterable[SynAlgos] = syns_provider.get_synonyms(
-            tokens=tokens, token=token, w_states=w_states
+        # syns: 1 to many synonyms depending on fuzzy_algos configuration.
+        syns_algos: List[SynAlgos] = syns_provider.get_synonyms(
+            tokens=tokens, token=token, states=states
         )
-        # stores matches between document's tokens and keywords'tokens.
-        tokens_states: List[TransitionState] = []
 
-        # 1 to many synonyms depending on fuzzy_algos configuration.
-        for syn, algos in syns_algos:
+        for state in states:
+            if state.w_bucket == w_bucket:
+                states2remove.append(state)
             # 0 to many states for [0] to [w-1] ; [w] only the start state.
-            for states in w_states:
-                for state in states:
-                    new_state = state.node.jump_to_node(syn)
-                    # when no path is found, EMPTY_NODE is returned.
-                    if new_state is EMPTY_NODE:
-                        continue
-                    token_state = TransitionState(
-                        parent=state, node=new_state, token=token, algos=algos
+            for syn, algos in syns_algos:
+                node = state.node.jump_to_node(syn)
+                # when no path is found, EMPTY_NODE is returned.
+                if node is EMPTY_NODE:
+                    continue
+                new_state = LinkedState(
+                    parent=state,
+                    node=node,
+                    token=token,
+                    algos=algos,
+                    w_bucket=w_bucket,
+                )
+                new_states.append(new_state)
+                # Why 'new_state not in states':
+                # if node_num is already in the states set,
+                # it means an annotation was already created for this state.
+                # For example 'cancer cancer', if an annotation was created
+                # for the first 'cancer' then we don't want to create
+                # a new one for the second 'cancer'.
+                if node.is_a_final_state() and new_state not in states:
+                    annot = create_annot(
+                        last_el=new_state, stop_tokens=stop_tokens
                     )
-                    tokens_states.append(token_state)
-                    if new_state.is_a_final_state():
-                        annot = create_annot(
-                            last_el=token_state, stop_tokens=stop_tokens
-                        )
-                        annots.append(annot)
-        # function 'count_not_stopword % w' has range [0 ; w-1]
-        w_states[count_not_stopword % w].clear()
-        w_states[count_not_stopword % w] = tokens_states
-        # Mypy: Incompatible types in assignment (expression has type
-        # "List[TokenState[Any]]", target has type "List[State]")
-        # but TokenState is a sublcass of State.
+                    annots.append(annot)
+        # Prepare next iteration: first loop remove out-of-reach states.
+        # Second iteration add new states.
+        for state in states2remove:
+            states.remove(state)
+        for state in new_states:
+            # this condition happens in the 'cancer cancer' example.
+            # the effect is replacing a previous token by a new one.
+            if state in states:
+                states.remove(state)
+            states.add(state)
     sort_annot(annots)  # mutate the list like annots.sort()
     return annots
