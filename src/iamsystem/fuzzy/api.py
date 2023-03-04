@@ -8,7 +8,6 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Sequence
-from typing import Set
 from typing import Tuple
 
 from typing_extensions import Protocol
@@ -39,7 +38,7 @@ class ISynsProvider(Protocol[TokenT]):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Set[LinkedState],
+        states: Iterable[LinkedState],
     ) -> List[SynAlgos]:
         """Retrieve the synonyms of a token.
 
@@ -96,7 +95,7 @@ class FuzzyAlgo(Generic[TokenT], ABC):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Set[LinkedState],
+        states: Iterable[LinkedState],
     ) -> List[SynAlgo]:
         """Main API function to retrieve all synonyms provided by
         a fuzzy algorithm.
@@ -125,7 +124,7 @@ class ContextFreeAlgo(FuzzyAlgo[TokenT], ABC):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Set[LinkedState],
+        states: Iterable[LinkedState],
     ) -> List[SynAlgo]:
         """Delegate to get_syns_of_token."""
         return [

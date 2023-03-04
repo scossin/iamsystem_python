@@ -40,6 +40,13 @@ class LinkedState(Generic[TokenT]):
         self.parent = parent
         self.algos = algos
         self.w_bucket = w_bucket
+        self.id = node.node_num
+
+    def is_obsolete(self, count_stop_word: int, w) -> bool:
+        distance_2_current_token = count_stop_word - self.w_bucket
+        if (w - distance_2_current_token < 0) and self.parent is not None:
+            return True
+        return False
 
     def __eq__(self, other):
         """Two nodes are equal if they have the same number."""
@@ -51,11 +58,11 @@ class LinkedState(Generic[TokenT]):
         # if not isinstance(other, LinkedState):
         #     return False
         # other_state: LinkedState = other
-        return self.node.node_num == other.node.node_num
+        return self.id == other.id
 
     def __hash__(self):
         """Uses the node number as a unique identifier."""
-        return self.node.node_num
+        return self.id
 
 
 def create_start_state(initial_state: INode):

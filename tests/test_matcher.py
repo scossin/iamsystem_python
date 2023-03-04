@@ -15,6 +15,8 @@ from iamsystem.keywords.keywords import Keyword
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import replace_annots
 from iamsystem.matcher.matcher import Matcher
+from iamsystem.matcher.strategy import EMatchingStrategy
+from iamsystem.matcher.strategy import LargeWindowMatching
 from iamsystem.stopwords.negative import NegativeStopwords
 from iamsystem.stopwords.simple import NoStopwords
 from iamsystem.stopwords.simple import Stopwords
@@ -463,6 +465,70 @@ class MatcherBuild(unittest.TestCase):
         )
         annots = matcher.annot_text(text="diabete en 2010")
         self.assertEqual(1, len(annots))
+
+    def test_large_window(self):
+        """Test fuzzy regex works"""
+        text = "absence congénitale de pigmentation ou absence de mélanine."
+        matcher = Matcher.build(keywords=["absence congenitale", "absence de"])
+        annots = matcher.annot_text(text=text)
+        self.assertEqual(2, len(annots))
+        matcher.strategy = LargeWindowMatching()
+        annots = matcher.annot_text(text=text)
+        self.assertEqual(2, len(annots))
+
+    def test_none_existing_strategy(self):
+        """An error is raised if matching strategy doesn't exist"""
+        with (self.assertRaises(KeyError)):
+            self.matcher = Matcher.build(
+                keywords=["cancer", "cancer de la prostate"],
+                strategy="NoneExistingStrategy",
+            )
+
+
+class NoOverlapStrategyTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.matcher = Matcher.build(
+            keywords=["cancer", "cancer de la prostate", "prostate", "de la"],
+            strategy=EMatchingStrategy.NO_OVERLAP,
+        )
+
+    def test_no_overlap_strategy(self):
+        """No overlapping: 'de la', 'prostate' nested annotations are not
+        created."""
+        text = "cancer de la prostate"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
+        self.assertEqual(
+            str(annots[0]), "cancer de la prostate	0 21	cancer de la prostate"
+        )
+
+    def test_no_overlap_strategy_back_track(self):
+        """The algorithm goes to 'cancer de la' - backtrack to 'cancer'
+        to generate an annotation, restart at 'de' and annotate 'de la'."""
+        text = "cancer de la something else prostate"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(3, len(annots))
+        self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
+        self.assertEqual(str(annots[1]), "de la	7 12	de la")
+        self.assertEqual(str(annots[2]), "prostate	28 36	prostate")
+
+    def test_no_overlap_strategy_stopword(self):
+        """Test the streatgy words with stopwords"""
+        self.matcher = Matcher.build(
+            keywords=["cancer", "cancer de la prostate"],
+            stopwords=["de", "la"],
+            strategy="no_overlap",
+        )
+        text = "cancer de la prostate"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
+        self.assertEqual(
+            str(annots[0]), "cancer prostate	0 6;13 21	cancer de la prostate"
+        )
+        text = "cancer du colon"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
+        self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
 
 
 if __name__ == "__main__":

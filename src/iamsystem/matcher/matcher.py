@@ -19,7 +19,6 @@ from typing import Union
 from iamsystem.fuzzy.abbreviations import Abbreviations
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.fuzzy.api import INormLabelAlgo
-from iamsystem.fuzzy.api import ISynsProvider
 from iamsystem.fuzzy.api import SynAlgos
 from iamsystem.fuzzy.cache import CacheFuzzyAlgos
 from iamsystem.fuzzy.exact import ExactMatch
@@ -34,12 +33,13 @@ from iamsystem.keywords.collection import Terminology
 from iamsystem.keywords.keywords import Keyword
 from iamsystem.keywords.util import get_unigrams
 from iamsystem.matcher.annotation import Annotation
-from iamsystem.matcher.annotation import create_annot
 from iamsystem.matcher.annotation import rm_nested_annots
-from iamsystem.matcher.annotation import sort_annot
 from iamsystem.matcher.api import IMatcher
+from iamsystem.matcher.api import IMatchingStrategy
+from iamsystem.matcher.strategy import EMatchingStrategy
+from iamsystem.matcher.strategy import WindowMatching
+from iamsystem.matcher.strategy import buildMatchingStrategy
 from iamsystem.matcher.util import LinkedState
-from iamsystem.matcher.util import create_start_state
 from iamsystem.stopwords.api import ISimpleStopwords
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.api import IStoreStopwords
@@ -50,7 +50,6 @@ from iamsystem.tokenization.api import ITokenizer
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.tokenize import french_tokenizer
 from iamsystem.tokenization.tokenize import tokenize_and_order_decorator
-from iamsystem.tree.nodes import EMPTY_NODE
 from iamsystem.tree.nodes import INode
 from iamsystem.tree.trie import Trie
 
@@ -80,10 +79,22 @@ class Matcher(IMatcher[TokenT]):
         self._trie: Trie = Trie()
         self._termino: IStoreKeywords = Terminology()
         self._remove_nested_annots = True
-        if stopwords is not None:
-            self._stopwords = stopwords
-        else:
-            self._stopwords = Stopwords()
+        self._stopwords = stopwords or Stopwords()
+        self._strategy: IMatchingStrategy = WindowMatching()
+
+    @property
+    def strategy(self) -> IMatchingStrategy[TokenT]:
+        """Return the matching strategy."""
+        return self._strategy
+
+    @strategy.setter
+    def strategy(self, strategy: IMatchingStrategy) -> None:
+        """Change the matching strategy.
+
+        :param strategy: an IAMsystem matching strategy.
+        :return: None.
+        """
+        self._strategy = strategy
 
     @property
     def stopwords(self) -> IStopwords[TokenT]:
@@ -261,7 +272,7 @@ class Matcher(IMatcher[TokenT]):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Set[LinkedState],
+        states: Iterable[LinkedState],
     ) -> List[SynAlgos]:
         """Get synonyms of a token with configured fuzzy algorithms.
 
@@ -296,7 +307,7 @@ class Matcher(IMatcher[TokenT]):
         :param tokens: an ordered or unordered sequence of tokens.
         :return: a list of :class:`~iamsystem.Annotation`.
         """
-        annots = detect(
+        annots = self._strategy.detect(
             tokens=tokens,
             w=self.w,
             initial_state=self.get_initial_state(),
@@ -317,6 +328,7 @@ class Matcher(IMatcher[TokenT]):
         order_tokens=False,
         negative=False,
         remove_nested_annots=True,
+        strategy: Union[str, EMatchingStrategy] = EMatchingStrategy.WINDOW,
         string_distance_ignored_w: Optional[Iterable[str]] = None,
         abbreviations: Optional[Iterable[Tuple[str, str]]] = None,
         spellwise: Optional[List[Dict[Any, Any]]] = None,
@@ -344,6 +356,9 @@ class Matcher(IMatcher[TokenT]):
             removed from keywords' tokens and so still be stopwords.
         :param remove_nested_annots: if two annotations overlap,
             remove the shorter one. Default to True.
+        :param strategy: an IAMsystem matching strategy responsible for
+            searching keywords in document.
+            Default to :class:`~iamsystem.WindowMatching`.
         :param string_distance_ignored_w: words ignored by string distance
             algorithms to avoid false positives matched.
         :param abbreviations: an iterable of tuples (short_form, long_form).
@@ -381,6 +396,7 @@ class Matcher(IMatcher[TokenT]):
         # Configure annot_text function
         matcher.w = w
         matcher.remove_nested_annots = remove_nested_annots
+        matcher.strategy = buildMatchingStrategy(strategy=strategy)
 
         # Add the keywords
         matcher.add_keywords(keywords=keywords)
@@ -474,93 +490,5 @@ class Matcher(IMatcher[TokenT]):
                     **params,
                 )
                 add_algo_in_cache(algo=ss_algo)
-
+        # matcher.strategy = LargeWindowDetector(matcher.get_initial_state())
         return matcher
-
-
-def detect(
-    tokens: Sequence[TokenT],
-    w: int,
-    initial_state: INode,
-    syns_provider: ISynsProvider,
-    stopwords: IStopwords,
-) -> List[Annotation[TokenT]]:
-    """Main internal function that implements iamsystem's algorithm.
-    Algorithm formalized in https://ceur-ws.org/Vol-3202/livingner-paper11.pdf
-
-    :param tokens: a sequence of :class:`~iamsystem.IToken`.
-    :param w: window, how many previous tokens can the algorithm look at.
-    :param initial_state: a node/state in the trie, i.e. the root node.
-    :param syns_provider: a class that provides synonyms for each token.
-    :param stopwords: an instance of :class:`~iamsystem.IStopwords`
-    that checks if a token is a stopword.
-    :return: A list of :class:`~iamsystem.Annotation`.
-    """
-    annots: List[Annotation] = []
-    # states stores linkedstate instance that keeps track of a tree path
-    # and document's tokens that matched.
-    states: Set[LinkedState] = set()
-    start_state = create_start_state(initial_state=initial_state)
-    states.add(start_state)
-    # count_not_stopword allows a stopword-independent window size.
-    count_not_stopword = 0
-    stop_tokens: List[TokenT] = []
-    new_states: List[LinkedState] = []
-    # states2remove store states that will be out-of-reach
-    # at next iteration.
-    states2remove: List[LinkedState] = []
-    for i, token in enumerate(tokens):
-        if stopwords.is_token_a_stopword(token):
-            stop_tokens.append(token)
-            continue
-        # w_bucket stores when a state will be out-of-reach given window size
-        # 'count_not_stopword % w' has range [0 ; w-1]
-        w_bucket = count_not_stopword % w
-        new_states.clear()
-        states2remove.clear()
-        count_not_stopword += 1
-        # syns: 1 to many synonyms depending on fuzzy_algos configuration.
-        syns_algos: List[SynAlgos] = syns_provider.get_synonyms(
-            tokens=tokens, token=token, states=states
-        )
-
-        for state in states:
-            if state.w_bucket == w_bucket:
-                states2remove.append(state)
-            # 0 to many states for [0] to [w-1] ; [w] only the start state.
-            for syn, algos in syns_algos:
-                node = state.node.jump_to_node(syn)
-                # when no path is found, EMPTY_NODE is returned.
-                if node is EMPTY_NODE:
-                    continue
-                new_state = LinkedState(
-                    parent=state,
-                    node=node,
-                    token=token,
-                    algos=algos,
-                    w_bucket=w_bucket,
-                )
-                new_states.append(new_state)
-                # Why 'new_state not in states':
-                # if node_num is already in the states set,
-                # it means an annotation was already created for this state.
-                # For example 'cancer cancer', if an annotation was created
-                # for the first 'cancer' then we don't want to create
-                # a new one for the second 'cancer'.
-                if node.is_a_final_state() and new_state not in states:
-                    annot = create_annot(
-                        last_el=new_state, stop_tokens=stop_tokens
-                    )
-                    annots.append(annot)
-        # Prepare next iteration: first loop remove out-of-reach states.
-        # Second iteration add new states.
-        for state in states2remove:
-            states.remove(state)
-        for state in new_states:
-            # this condition happens in the 'cancer cancer' example.
-            # the effect is replacing a previous token by a new one.
-            if state in states:
-                states.remove(state)
-            states.add(state)
-    sort_annot(annots)  # mutate the list like annots.sort()
-    return annots

@@ -78,6 +78,11 @@ class INode(ABC):
         """the (normalized) token stored by this node."""
         raise NotImplementedError
 
+    @abstractmethod
+    def get_child_tokens(self) -> Iterable[str]:
+        """Return the children token."""
+        raise NotImplementedError
+
 
 class EmptyNode(INode):
     """An 'exit' node to go when no transition is found."""
@@ -120,6 +125,10 @@ class EmptyNode(INode):
 
     def get_token(self) -> str:
         """This method shouldn't be called."""
+        raise NotImplementedError
+
+    def get_child_tokens(self) -> Iterable[str]:
+        """Return the children token."""
         raise NotImplementedError
 
 
@@ -176,6 +185,7 @@ class Node(INode, ABC):
     def add_child_node(self, node: INode) -> None:
         """Add a node that stores the next keyword's token."""
         token = node.get_token()
+
         self.childNodes[token] = node
 
     def is_a_final_state(self) -> bool:
@@ -211,6 +221,11 @@ class Node(INode, ABC):
     def get_token(self) -> str:
         """Return the token associated to this node."""
         return self.token
+
+    def get_child_tokens(self) -> Iterable[str]:
+        """Return the childs' tokens."""
+        for token in self.childNodes.keys():
+            yield token
 
     def __eq__(self, other):
         """Two nodes are equal if they have the same number."""

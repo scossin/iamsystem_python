@@ -14,6 +14,7 @@ from iamsystem.tokenization.api import ISpan
 from iamsystem.tokenization.api import ITokenizer
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tree.api import IInitialState
+from iamsystem.tree.nodes import INode
 
 
 @runtime_checkable
@@ -81,4 +82,29 @@ class IBratFormatter(Protocol):
     def get_text_and_offsets(self, annot: IAnnotation) -> Tuple[str, str]:
         """Return text (document substring) and annotation's offsets in the
         Brat format"""
+        raise NotImplementedError
+
+
+@runtime_checkable
+class IMatchingStrategy(Protocol):
+    """Declare what a matching strategy must implement."""
+
+    def detect(
+        self,
+        tokens: Sequence[TokenT],
+        w: int,
+        initial_state: INode,
+        syns_provider: ISynsProvider,
+        stopwords: IStopwords,
+    ) -> List[IAnnotation[TokenT]]:
+        """Main internal function that implements iamsystem's algorithm.
+
+        :param tokens: a sequence of :class:`~iamsystem.IToken`.
+        :param w: window, how many previous tokens can the algorithm look at.
+        :param initial_state: a node/state in the trie, i.e. the root node.
+        :param syns_provider: a class that provides synonyms for each token.
+        :param stopwords: an instance of :class:`~iamsystem.IStopwords`
+        that checks if a token is a stopword.
+        :return: A list of :class:`~iamsystem.Annotation`.
+        """
         raise NotImplementedError

@@ -13,7 +13,7 @@ from iamsystem.fuzzy.spellwise import ESpellWiseAlgo
 from iamsystem.fuzzy.spellwise import SpellWiseWrapper
 from iamsystem.matcher.annotation import rm_nested_annots
 from iamsystem.matcher.matcher import Matcher
-from iamsystem.matcher.matcher import detect
+from iamsystem.matcher.strategy import WindowMatching
 from iamsystem.matcher.util import LinkedState
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.simple import Stopwords
@@ -36,7 +36,7 @@ def build_detect(
 
     def _detect(tokens: Sequence[TokenT], w: int):
         """Return a custom detect function."""
-        return detect(
+        return WindowMatching().detect(
             tokens=tokens,
             w=w,
             initial_state=trie.root_node,
@@ -207,7 +207,7 @@ class DetectTest(unittest.TestCase):
             i=1,
         )
         tokens = [token_ins, token_card]
-        fuzzy_lemma = FuzzyAlgoPos()
+        fuzzy_lemma = FuzzyAlgoPos(name="fuzzyPos")
         self.matcher.add_fuzzy_algo(fuzzy_lemma)
         annots = self.detect_ivg(tokens=tokens, w=1)
         ins_token: TokenPOS = cast(TokenPOS, annots[0]._tokens[0])
@@ -309,9 +309,9 @@ class FuzzyAlgoPos(FuzzyAlgo, ABC):
     ) -> Iterable[SynAlgo]:
         """Returns only if POS is NOUN"""
         if token.pos == "NOUN":
-            yield self.word_to_syn("insuffisance"), self.name
+            return [(self.word_to_syn("insuffisance"), self.name)]
         else:
-            yield tuple(), "NO_SYN"
+            return []
 
 
 if __name__ == "__main__":

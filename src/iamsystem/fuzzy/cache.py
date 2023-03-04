@@ -6,7 +6,6 @@ from typing import Generic
 from typing import Iterable
 from typing import List
 from typing import Sequence
-from typing import Set
 
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.fuzzy.api import INormLabelAlgo
@@ -48,7 +47,7 @@ class CacheFuzzyAlgos(FuzzyAlgo, Generic[TokenT]):
         self,
         tokens: Sequence[IToken],
         token: TokenT,
-        states: Set[LinkedState],
+        states: Iterable[LinkedState],
     ) -> List[SynAlgo]:
         """Implements superclass abstract method."""
         word = token.norm_label
