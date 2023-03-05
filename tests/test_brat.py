@@ -16,7 +16,9 @@ from iamsystem.keywords.keywords import Keyword
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.token import Offsets
+from iamsystem.tokenization.tokenize import english_tokenizer
 from iamsystem.tokenization.tokenize import french_tokenizer
+from iamsystem.tokenization.tokenize import split_find_iter_closure
 
 
 class BratUtilsTest(unittest.TestCase):
@@ -310,6 +312,20 @@ class BratFormatterTest(unittest.TestCase):
         annot.brat_formatter = IndividualTokenFormatter()
         self.assertEqual(
             annot.to_string(), "cancer prostate	0 6;7 15	cancer prostate"
+        )
+
+    def test_tokenformater_punctuation(self):
+        """Test punctuation is not removed by Brat Formatter.
+        https://github.com/scossin/iamsystem_python/issues/13
+        """
+        tokenizer = english_tokenizer()
+        tokenizer.split = split_find_iter_closure(pattern=r"(\w|\.|,)+")
+        matcher = Matcher.build(
+            keywords=["calcium 2.6 mmol/L"], tokenizer=tokenizer
+        )
+        annots = matcher.annot_text(text="calcium 2.6 mmol/L")
+        self.assertEqual(
+            str(annots[0]), "calcium 2.6 mmol/L	0 18	calcium 2.6 mmol/L"
         )
 
 
