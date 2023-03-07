@@ -1,5 +1,6 @@
 """ Matcher's API."""
 from typing import List
+from typing import Optional
 from typing import Sequence
 from typing import Tuple
 
@@ -34,13 +35,18 @@ class IAnnotation(ISpan, IOffsets, Protocol[TokenT]):
         raise NotImplementedError
 
     @property
-    def brat_formatter(self) -> "IBratFormatter":
-        """Access brat formatter."""
+    def text(self) -> Optional[str]:
+        """Return the annotated text."""
         raise NotImplementedError
 
     @property
     def keywords(self) -> Sequence[IKeyword]:
         """Keywords linked to this annotation."""
+        raise NotImplementedError
+
+    @property
+    def to_string(self) -> str:
+        """A string representation of an annotation."""
         raise NotImplementedError
 
 
@@ -81,7 +87,15 @@ class IBratFormatter(Protocol):
 
     def get_text_and_offsets(self, annot: IAnnotation) -> Tuple[str, str]:
         """Return text (document substring) and annotation's offsets in the
-        Brat format"""
+            Brat format.
+
+        :param annot: an annotation.
+        :return: A text span and its offsets:
+          'The start-offset is the index of the first character of the
+          annotated span in the text (".txt" file), i.e. the number of
+          characters in the document preceding it. The end-offset is the index
+          of the first character after the annotated span.'
+        """
         raise NotImplementedError
 
 

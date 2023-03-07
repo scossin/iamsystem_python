@@ -7,12 +7,12 @@ from iamsystem.brat.adapter import BratDocument
 from iamsystem.brat.adapter import BratEntity
 from iamsystem.brat.adapter import BratNote
 from iamsystem.brat.adapter import BratWriter
-from iamsystem.brat.formatter import IndividualTokenFormatter
-from iamsystem.brat.formatter import SpanFormatter
-from iamsystem.brat.formatter import TokenStopFormatter
+from iamsystem.brat.formatter import ContSeqStopFormatter
+from iamsystem.brat.formatter import EBratFormatters
 from iamsystem.brat.util import get_brat_format
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.keywords.keywords import Keyword
+from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.token import Offsets
@@ -83,27 +83,15 @@ class BratEntityTest(unittest.TestCase):
                 text=self.text,
             )
 
-    def test_to_brat_format(self):
-        """to_brat_format function performs a per token annotation."""
-        matcher = Matcher.build(
-            keywords=["cancer prostate"], stopwords=["de", "la"], w=2
-        )
-        annots = matcher.annot_text(text="cancer de la prostate")
-        self.assertEqual(annots[0].to_brat_format(), "0 6;13 21")
-        self.assertEqual(
-            str(annots[0]), "cancer prostate	0 6;13 21	cancer prostate"
-        )
-
     def test_to_brat_format_leading_stop(self):
         """Leading stopwords are removed from a discontinuous sequence."""
         matcher = Matcher.build(
             keywords=["cancer prostate"], stopwords=["de", "la"], w=2
         )
         annots = matcher.annot_text(text="cancer de la glande prostate")
-        self.assertEqual(annots[0].to_brat_format(), "0 6;20 28")
         self.assertEqual(
             str(annots[0]), "cancer prostate	0 6;20 28	cancer prostate"
-        )  # noqa
+        )
 
 
 class BraNoteTest(unittest.TestCase):
@@ -257,6 +245,9 @@ class BratDocumentTest(unittest.TestCase):
 
 
 class BratFormatterTest(unittest.TestCase):
+    def tearDown(self) -> None:
+        Annotation.set_brat_formatter(brat_formatter=EBratFormatters.DEFAULT)
+
     def setUp(self) -> None:
         self.matcher = Matcher.build(
             keywords=["cancer prostate"], stopwords=["de", "la"], w=2
@@ -274,7 +265,7 @@ class BratFormatterTest(unittest.TestCase):
     def test_stop_true(self):
         """BratTokenAndStop remove trailing sequence of stopwords.
         Here 'de', 'la' that are trailing thus removed."""
-        self.annot.brat_formatter = TokenStopFormatter()  # default True
+        self.annot.brat_formatter = ContSeqStopFormatter()  # default True
         self.assertEqual(
             self.annot.to_string(), "cancer prostate	0 6;20 28	cancer prostate"
         )
@@ -284,14 +275,18 @@ class BratFormatterTest(unittest.TestCase):
         Here 'de', 'la' that are not trailing thus not removed."""
         annots = self.matcher.annot_text(text="cancer de la prostate")
         annot = annots[0]
-        annot.brat_formatter = TokenStopFormatter()  # default True
+        Annotation.set_brat_formatter(
+            brat_formatter=EBratFormatters.CONTINUOUS_SEQ_STOP
+        )
         self.assertEqual(
             annot.to_string(), "cancer de la prostate	0 21	cancer prostate"
         )
 
     def test_stop_false(self):
         """Keep stopwords inside annotation, 'de', 'la' are present."""
-        self.annot.brat_formatter = TokenStopFormatter(False)
+        Annotation.set_brat_formatter(
+            brat_formatter=ContSeqStopFormatter(False)
+        )
         self.assertEqual(
             self.annot.to_string(),
             "cancer de la prostate	0 12;20 28	cancer prostate",
@@ -299,7 +294,7 @@ class BratFormatterTest(unittest.TestCase):
 
     def test_span(self):
         """Simply take start and end offsets of the annotation."""
-        self.annot.brat_formatter = SpanFormatter(text=self.text)
+        Annotation.set_brat_formatter(brat_formatter=EBratFormatters.SPAN)
         self.assertEqual(
             self.annot.to_string(),
             "cancer de la glande prostate	0 28	cancer prostate",
@@ -307,9 +302,9 @@ class BratFormatterTest(unittest.TestCase):
 
     def test_individual(self):
         """Check it outputs offsets for each token."""
+        Annotation.set_brat_formatter(brat_formatter=EBratFormatters.TOKEN)
         annots = self.matcher.annot_text(text="cancer prostate")
         annot = annots[0]
-        annot.brat_formatter = IndividualTokenFormatter()
         self.assertEqual(
             annot.to_string(), "cancer prostate	0 6;7 15	cancer prostate"
         )

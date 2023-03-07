@@ -201,11 +201,9 @@ class TokenizerDocTest(unittest.TestCase):
         annots = matcher.annot_text(text=text)
         for annot in annots:
             print(annot)
-        # sars cov +	51 60	SARS-CoV+ (95209-3)
+        # sars-cov +	51 60	SARS-CoV+ (95209-3)
         # end_test_matcher_with_custom_tokenizer
-        self.assertEqual(
-            "sars cov +	51 60	SARS-CoV+ (95209-3)", str(annots[0])
-        )
+        self.assertEqual("sars-cov+	51 60	SARS-CoV+ (95209-3)", str(annots[0]))
 
     def test_unordered_words_seq(self):
         """Tokenizer orders the tokens to have a match when the order of
@@ -418,6 +416,12 @@ class AnnotationDocTest(unittest.TestCase):
 
 
 class BratDocTest(unittest.TestCase):
+    def tearDown(self) -> None:
+        from iamsystem import Annotation
+        from iamsystem import EBratFormatters
+
+        Annotation.set_brat_formatter(brat_formatter=EBratFormatters.DEFAULT)
+
     def test_brat_document(self):
         """Brat document example."""
         # start_test_brat_document
@@ -519,14 +523,14 @@ class BratDocTest(unittest.TestCase):
     def test_brat_individual_formatter(self):
         """Show token per token formatter"""
         # start_test_brat_individual_formatter
-        from iamsystem import IndividualTokenFormatter
+        from iamsystem import Annotation
+        from iamsystem import EBratFormatters
         from iamsystem import Matcher
 
+        Annotation.set_brat_formatter(brat_formatter=EBratFormatters.TOKEN)
         matcher = Matcher.build(keywords=["North America"])
         annots = matcher.annot_text(text="North America")
-        formatter = IndividualTokenFormatter()
         for annot in annots:
-            annot.brat_formatter = formatter
             print(annot)
         # North America	0 5;6 13	North America
         # end_test_brat_individual_formatter
@@ -537,44 +541,44 @@ class BratDocTest(unittest.TestCase):
     def test_brat_tokenstop_formatter(self):
         """Show adding stopwords when continuous in the sequence"""
         # start_test_brat_tokenstop_formatter
+        from iamsystem import Annotation
+        from iamsystem import EBratFormatters
         from iamsystem import Entity
         from iamsystem import Matcher
-        from iamsystem import TokenStopFormatter
 
         matcher = Matcher.build(
             keywords=[Entity(label="cancer de prostate", kb_id="C61")],
             stopwords=["de", "la"],
         )
         annots = matcher.annot_text(text="cancer de la prostate")
-        formatter = TokenStopFormatter()
-        for annot in annots:
-            print(f"Default formatter: {annot}")
-            annot.brat_formatter = formatter
-            print(f"TokenStop formatter: {annot}")
+        print(f"Default formatter: {annots[0]}")
+        Annotation.set_brat_formatter(
+            brat_formatter=EBratFormatters.CONTINUOUS_SEQ_STOP
+        )
+        print(f"Default formatter: {annots[0]}")
         # Default formatter: cancer prostate	0 6;13 21	cancer de prostate (C61) # noqa
         # TokenStop formatter: cancer de la prostate	0 21	cancer de prostate (C61) # noqa
         # end_test_brat_tokenstop_formatter
         self.assertEqual(
             str(annots[0]),
-            "cancer de la prostate	0 21	cancer de " "prostate (C61)",
+            "cancer de la prostate	0 21	cancer de prostate (C61)",
         )
 
     def test_brat_span_formatter(self):
         """Show creating a span from start to end of the annotation."""
         # start_test_brat_span_formatter
+        from iamsystem import Annotation
+        from iamsystem import EBratFormatters
         from iamsystem import Matcher
-        from iamsystem import SpanFormatter
 
         matcher = Matcher.build(
             keywords=["North America"], stopwords=["and"], w=2
         )
         text = "North and South America"
         annots = matcher.annot_text(text=text)
-        formatter = SpanFormatter(text=text)
-        for annot in annots:
-            print(f"Default formatter: {annot}")
-            annot.brat_formatter = formatter
-            print(f"Span formatter: {annot}")
+        print(f"Default formatter: {annots[0]}")
+        Annotation.set_brat_formatter(brat_formatter=EBratFormatters.SPAN)
+        print(f"Span formatter: {annots[0]}")
         # Default formatter: North America	0 5;16 23	North America
         # Span formatter: North and South America	0 23	North America
         # end_test_brat_span_formatter

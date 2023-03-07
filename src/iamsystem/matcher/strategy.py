@@ -320,7 +320,7 @@ class NoOverlapMatching(IMatchingStrategy):
                 )
                 i = last_i + 1
                 started_at = started_at + 1
-                states = set()
+                states.clear()
                 states.add(start_state)
         # All tokens have been seen. Create last annotations if any states:
         self._add_annots(

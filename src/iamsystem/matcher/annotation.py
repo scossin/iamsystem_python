@@ -2,17 +2,21 @@
 import functools
 
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import Union
 
-from iamsystem.brat.formatter import TokenFormatter
+from iamsystem.brat.formatter import EBratFormatters
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IBratFormatter
+from iamsystem.matcher.printannot import PrintAnnot
 from iamsystem.matcher.util import LinkedState
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.span import Span
@@ -28,12 +32,33 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
     """Ouput class of :class:`~iamsystem.Matcher` storing information on the
     detected entities."""
 
+    annot_to_str: Callable[[IAnnotation], str] = PrintAnnot().annot_to_str
+    " A class function that generates a string representation of an annotation."  # noqa
+
+    @classmethod
+    def set_brat_formatter(
+        cls, brat_formatter: Union[EBratFormatters, IBratFormatter]
+    ):
+        """Change Brat Formatter to change text-span and offsets.
+
+        :param brat_formatter: A Brat formatter to produce
+            a different Brat annotation. If None, default to
+            :class:`~iamsystem.ContSeqFormatter`.
+        :return: None
+        """
+        if isinstance(brat_formatter, EBratFormatters):
+            brat_formatter = brat_formatter.value
+        cls.annot_to_str = PrintAnnot(
+            brat_formatter=brat_formatter
+        ).annot_to_str
+
     def __init__(
         self,
         tokens: List[TokenT],
         algos: List[List[str]],
         last_state: INode,
         stop_tokens: List[TokenT],
+        text: Optional[str] = None,
     ):
         """Create an annotation.
 
@@ -44,26 +69,27 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         :param last_state: a final state of iamsystem algorithm containing the
             keyword that matched this sequence of tokens.
         :param stop_tokens: the list of stopwords tokens of the document.
+        :param text: the annotated text/document.
         """
         super().__init__(tokens)
         self._algos = algos
         self._last_state = last_state
         self._stop_tokens = stop_tokens
-        self._brat_formatter: IBratFormatter = TokenFormatter()
+        self._text = text
+
+    @property
+    def text(self) -> Optional[str]:
+        """Return the annotated text."""
+        return self._text
+
+    @text.setter
+    def text(self, value: str) -> None:
+        """Set the annotated text."""
+        self._text = value
 
     @property
     def algos(self) -> List[List[str]]:
         return self._algos
-
-    @property
-    def brat_formatter(self) -> IBratFormatter:
-        """Return the Brat formatter."""
-        return self._brat_formatter
-
-    @brat_formatter.setter
-    def brat_formatter(self, brat_formatter: IBratFormatter):
-        """Change the Brat formatter to produce a different Brat annotation"""
-        self._brat_formatter = brat_formatter
 
     @property
     def label(self):
@@ -109,7 +135,6 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         dic = {
             "start": self.start,
             "end": self.end,
-            "offsets": self.to_brat_format(),
             "label": self.label,
             "norm_label": self.tokens_norm_label,
             "tokens": [itoken_to_dict(token) for token in self.tokens],
@@ -130,7 +155,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         """Annotation string representation with Brat offsets format."""
         return f"{self.to_string()}"
 
-    def to_string(self, text: str = None, debug=False) -> str:
+    def to_string(self, text=False, debug=False) -> str:
         """Get a default string representation of this object.
 
         :param text: the document from which this annotation comes from.
@@ -140,22 +165,14 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
             and fuzzyalgo names.
         :return: a concatenated string
         """
-        text_span, offsets = self._brat_formatter.get_text_and_offsets(
-            annot=self
-        )
-        columns = [text_span, offsets, self._keywords_to_string()]
-        if text is not None:
-            text_substring = text[self.start : self.end]  # noqa
+        columns = [Annotation.annot_to_str(annot=self)]
+        if text:
+            text_substring = self.text[self.start : self.end]  # noqa
             columns.append(text_substring)
         if debug:
             token_annots_str = self._get_norm_label_algos_str()
             columns.append(token_annots_str)
         return "\t".join(columns)
-
-    def _keywords_to_string(self):
-        """Merge the keywords."""
-        keywords_str = [str(keyword) for keyword in self.keywords]
-        return ";".join(keywords_str)
 
     def _get_norm_label_algos_str(self):
         """Get a string representation of tokens and algorithms."""

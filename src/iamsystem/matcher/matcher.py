@@ -32,8 +32,8 @@ from iamsystem.keywords.api import IStoreKeywords
 from iamsystem.keywords.collection import Terminology
 from iamsystem.keywords.keywords import Keyword
 from iamsystem.keywords.util import get_unigrams
-from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import rm_nested_annots
+from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.api import IMatchingStrategy
 from iamsystem.matcher.strategy import EMatchingStrategy
@@ -290,18 +290,21 @@ class Matcher(IMatcher[TokenT]):
         synonyms: List[SynAlgos] = list(syns_collector.items())
         return synonyms
 
-    def annot_text(self, text: str) -> List[Annotation[TokenT]]:
+    def annot_text(self, text: str) -> List[IAnnotation[TokenT]]:
         """Annotate a document.
 
         :param text: the document to annotate.
         :return: a list of :class:`~iamsystem.Annotation`.
         """
         tokens: Sequence[TokenT] = self.tokenize(text)
-        return self.annot_tokens(tokens=tokens)
+        annots = self.annot_tokens(tokens=tokens)
+        for annot in annots:
+            annot.text = text
+        return annots
 
     def annot_tokens(
         self, tokens: Sequence[TokenT]
-    ) -> List[Annotation[TokenT]]:
+    ) -> List[IAnnotation[TokenT]]:
         """Annotate a sequence of tokens.
 
         :param tokens: an ordered or unordered sequence of tokens.

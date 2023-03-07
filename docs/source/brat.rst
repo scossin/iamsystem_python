@@ -20,9 +20,9 @@ The default Brat formatter groups continuous sequence of tokens:
     :start-after: # start_test_brat_default_formatter
     :end-before: # end_test_brat_default_formatter
 
-Indeed, "North America" has two tokens, "North" and "America" but a continuous annotation (0 13) is created.
+Although "North America" has two tokens, "North" and "America", a continuous Brat annotation (0 13) is created.
 
-In order to have one Brat span for each token, you can use the :ref:`api_doc:IndividualTokenFormatter`:
+In order to have one Brat span for each token, you can use the :ref:`api_doc:TokenFormatter`:
 
 .. literalinclude:: ../../tests/test_doc.py
     :language: python
@@ -32,7 +32,7 @@ In order to have one Brat span for each token, you can use the :ref:`api_doc:Ind
     :end-before: # end_test_brat_individual_formatter
 
 If you have stopwords in your matching sequences, you can include them in the Brat annotation using
-:ref:`api_doc:TokenStopFormatter`.
+:ref:`api_doc:ContSeqStopFormatter`.
 Stopwords are included if and only if they form a continuous sequence of tokens.
 Check the differences:
 
