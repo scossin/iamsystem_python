@@ -134,6 +134,23 @@ class MatcherDocTest(unittest.TestCase):
             "calcium level	0 7;14 19	calcium level", str(annots[0])
         )
 
+    def test_no_overlap_strategy(self):
+        """Simple NoOverlap Strategy example."""
+        # start_test_no_overlap_strategy
+        from iamsystem import EMatchingStrategy
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(
+            keywords=["North America", "South America"],
+            strategy=EMatchingStrategy.NO_OVERLAP,
+        )
+        annots = matcher.annot_text(text="North and South America")
+        for annot in annots:
+            print(annot)
+        # South America	10 23	South America
+        # end_test_no_overlap_strategy
+        self.assertEqual("South America	10 23	South America", str(annots[0]))
+
     def test_fail_order(self):
         """Matcher fails to detect when tokens order is not the same in
         keywords and document."""

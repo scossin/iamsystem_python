@@ -5,7 +5,6 @@ from typing import Dict
 from typing import List
 from typing import Sequence
 from typing import Set
-from typing import Union
 
 from iamsystem.fuzzy.api import ISynsProvider
 from iamsystem.fuzzy.api import SynAlgos
@@ -20,32 +19,6 @@ from iamsystem.stopwords.api import IStopwords
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tree.nodes import EMPTY_NODE
 from iamsystem.tree.nodes import INode
-
-
-class EMatchingStrategy(Enum):
-    """Enumeration of matching strategies."""
-
-    WINDOW = "WINDOW"
-    LARGE_WINDOW = "LARGE_WINDOW"
-    NO_OVERLAP = "NO_OVERLAP"
-
-
-def buildMatchingStrategy(
-    strategy: Union[str, EMatchingStrategy]
-) -> IMatchingStrategy:
-    """Matching strategy factory.
-
-    :param strategy: the name of the value strategy.
-    :return: a matching strategy.
-    """
-    if isinstance(strategy, str):
-        strategy = EMatchingStrategy[strategy.upper()]
-    if strategy == EMatchingStrategy.WINDOW:
-        return WindowMatching()
-    if strategy == EMatchingStrategy.LARGE_WINDOW:
-        return LargeWindowMatching()
-    if strategy == EMatchingStrategy.NO_OVERLAP:
-        return NoOverlapMatching()
 
 
 class WindowMatching(IMatchingStrategy):
@@ -366,3 +339,14 @@ class NoOverlapMatching(IMatchingStrategy):
                 last_annot_i = max(annot.end_i, last_annot_i)
                 annots.append(annot)
         return max(started_at, last_annot_i)
+
+
+class EMatchingStrategy(Enum):
+    """Enumeration of matching strategies."""
+
+    WINDOW = WindowMatching()
+    " Default matching strategy. "
+    LARGE_WINDOW = LargeWindowMatching()
+    " Same annotations as Window but faster than window is large. "
+    NO_OVERLAP = NoOverlapMatching()
+    " No overlap/nested annotations, fastest strategies."

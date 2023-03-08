@@ -81,3 +81,32 @@ the algorithm fails to detect it. For example:
 This problem can be solved by changing the order of the tokens in a sentence
 which is the responsibility of the tokenizer.
 See Tokenizer section on :ref:`tokenizer:Change tokens order`.
+
+Matching strategies
+^^^^^^^^^^^^^^^^^^^
+
+The matching strategy is the core of the IAMsystem algorithm.
+There are currently two different strategies: *window matching* and *NoOverlap* (:ref:`api_doc:EMatchingStrategy`).
+The *NoOverlap* strategy is the fastest one since it does not take into account the window parameter
+and does not produce any overlap (except in case of an ambiguity).
+The window strategy is slightly slower but allows the detection of discontinuous tokens sequence and
+nested annotations.
+
+Window Matching
+"""""""""""""""
+
+This is the default strategy. It is used in all the examples of this documentation.
+When the window size is small, the number of operations depends little on the number of keywords.
+As the window increases, the number of operations grows and may become proportional to n*m with n the number of
+tokens in the document and m the number of keywords.
+The *LargeWindowMatching* strategy trades space for time complexity, it produces exactly the same annotations as the
+WindowMatching strategy with a number of operations proportional to n*log(m).
+*LargeWindowMatching* is slower than the *WindowMatching* when w is small but much faster when w is large,
+for example when w=1000.
+
+No Overlap
+""""""""""
+
+The *NoOverlap* matching strategy was the first matching strategy implemented by IAMsystem and was described in research papers.
+It only uses a window of 1 (window parameter has no effect) and doesn't detect nested annotations.
+Although this strategy is limited in scope, it's the fastest.

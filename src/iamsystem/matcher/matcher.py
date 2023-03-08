@@ -38,7 +38,6 @@ from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.api import IMatchingStrategy
 from iamsystem.matcher.strategy import EMatchingStrategy
 from iamsystem.matcher.strategy import WindowMatching
-from iamsystem.matcher.strategy import buildMatchingStrategy
 from iamsystem.matcher.util import LinkedState
 from iamsystem.stopwords.api import ISimpleStopwords
 from iamsystem.stopwords.api import IStopwords
@@ -399,7 +398,9 @@ class Matcher(IMatcher[TokenT]):
         # Configure annot_text function
         matcher.w = w
         matcher.remove_nested_annots = remove_nested_annots
-        matcher.strategy = buildMatchingStrategy(strategy=strategy)
+        if isinstance(strategy, str):
+            strategy = EMatchingStrategy[strategy.upper()]
+        matcher.strategy = strategy.value
 
         # Add the keywords
         matcher.add_keywords(keywords=keywords)

@@ -20,6 +20,12 @@ Matcher build
    :members: build
    :noindex:
 
+EMatchingStrategy
+^^^^^^^^^^^^^^^^^
+.. autoclass:: iamsystem.EMatchingStrategy
+   :members:
+   :noindex:
+
 Span
 ----
 .. autoclass:: iamsystem.matcher.annotation.Span

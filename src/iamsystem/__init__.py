@@ -2,6 +2,7 @@ __all__ = [
     "Matcher",
     "IMatcher",
     "IBaseMatcher",
+    "EMatchingStrategy",
     "Annotation",
     "IAnnotation",
     "PrintAnnot",
@@ -94,6 +95,7 @@ from iamsystem.matcher.api import IBratFormatter
 from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.matcher import Matcher
 from iamsystem.matcher.printannot import PrintAnnot
+from iamsystem.matcher.strategy import EMatchingStrategy
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.negative import NegativeStopwords
 from iamsystem.stopwords.simple import NoStopwords
