@@ -513,7 +513,7 @@ class NoOverlapStrategyTest(unittest.TestCase):
         self.assertEqual(str(annots[2]), "prostate	28 36	prostate")
 
     def test_no_overlap_strategy_stopword(self):
-        """Test the streatgy words with stopwords"""
+        """Test the strategy words with stopwords"""
         self.matcher = Matcher.build(
             keywords=["cancer", "cancer de la prostate"],
             stopwords=["de", "la"],
@@ -529,6 +529,18 @@ class NoOverlapStrategyTest(unittest.TestCase):
         annots = self.matcher.annot_text(text=text)
         self.assertEqual(1, len(annots))
         self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
+
+    def test_no_overlap_end_token(self):
+        """Test 'END_TOKEN' works: at the last token 'instutionnelle'
+        it reaches the 'END_TOKEN' and needs to back-track to the token 'de'
+        in order to detect medecine."""
+        self.matcher = Matcher.build(
+            keywords=["portail de la médecine instutionnelle", "médecine"],
+            strategy="no_overlap",
+        )
+        text = "Portail de la médecine"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
 
 
 if __name__ == "__main__":
