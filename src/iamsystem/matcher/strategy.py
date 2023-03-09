@@ -17,6 +17,7 @@ from iamsystem.matcher.util import LinkedState
 from iamsystem.matcher.util import create_start_state
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.tokenization.api import TokenT
+from iamsystem.tokenization.tokenize import Token
 from iamsystem.tree.nodes import EMPTY_NODE
 from iamsystem.tree.nodes import INode
 
@@ -223,6 +224,14 @@ class NoOverlapMatching(IMatchingStrategy):
     Algorithm formalized in https://ceur-ws.org/Vol-3202/livingner-paper11.pdf # noqa
     """
 
+    END_TOKEN = Token(
+        start=-1,
+        end=-1,
+        label="IAMSYSTEM_END_TOKEN",
+        norm_label="IAMSYSTEM_END_TOKEN",
+        i=-1,
+    )
+
     def detect(
         self,
         tokens: Sequence[TokenT],
@@ -245,8 +254,13 @@ class NoOverlapMatching(IMatchingStrategy):
         # started_at is used for back-tracking, it stores the initial 'i'
         # from which the initial state started.
         started_at = 0
-        while i < len(tokens):
-            token = tokens[i]
+        # I create a copy of the tokens sequence and append 'END_TOKEN'
+        # The goal of this 'END_TOKEN' is to generate a dead end for the last
+        # new_states which force to enter case '2)' below.
+        tokens_copy = list(tokens)
+        tokens_copy.append(NoOverlapMatching.END_TOKEN)
+        while i < len(tokens_copy):
+            token = tokens_copy[i]
             if stopwords.is_token_a_stopword(token):
                 stop_tokens.append(token)
                 i += 1
@@ -271,12 +285,12 @@ class NoOverlapMatching(IMatchingStrategy):
                         w_bucket=-1,
                     )
                     new_states.add(new_state)
-            # Case the algorithm is exploring a path:
+            # 1) Case the algorithm is exploring a path:
             if len(new_states) != 0:
                 states = new_states
                 i += 1
                 # don't 'started_at += 1' to allow backtracking later.
-            # Case the algorithm has finished exploring a path:
+            # 2) Case the algorithm has finished exploring a path:
             else:
                 # the algorithm has gone nowhere from initial state:
                 if len(states) == 1 and start_state in states:
@@ -295,13 +309,6 @@ class NoOverlapMatching(IMatchingStrategy):
                 started_at = started_at + 1
                 states.clear()
                 states.add(start_state)
-        # All tokens have been seen. Create last annotations if any states:
-        self._add_annots(
-            annots=annots,
-            states=states,
-            started_at=started_at,
-            stop_tokens=stop_tokens,
-        )
         sort_annot(annots)  # mutate the list like annots.sort()
         return annots
 

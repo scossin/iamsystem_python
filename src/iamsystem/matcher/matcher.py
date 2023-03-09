@@ -398,6 +398,7 @@ class Matcher(IMatcher[TokenT]):
         # Configure annot_text function
         matcher.w = w
         matcher.remove_nested_annots = remove_nested_annots
+
         if isinstance(strategy, str):
             strategy = EMatchingStrategy[strategy.upper()]
         matcher.strategy = strategy.value
