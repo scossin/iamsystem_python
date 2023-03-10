@@ -542,6 +542,24 @@ class NoOverlapStrategyTest(unittest.TestCase):
         annots = self.matcher.annot_text(text=text)
         self.assertEqual(1, len(annots))
 
+    def test_fuzzy_algorithms_with_negative_stopwords(self):
+        """Check fuzzy algorithms are working with negative stopwords.
+        Here check it works with Levenshtein."""
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(
+            keywords=["cancer du poumon"],
+            stopwords=["du"],
+            negative=True,
+            w=1,
+            abbreviations=[("k", "cancer")],
+            spellwise=[
+                dict(measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)
+            ],
+        )
+        annots = matcher.annot_text(text="k poumons")
+        self.assertEqual(1, len(annots))
+
 
 if __name__ == "__main__":
     unittest.main()
