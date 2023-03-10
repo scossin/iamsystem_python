@@ -172,7 +172,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         if debug:
             token_annots_str = self._get_norm_label_algos_str()
             columns.append(token_annots_str)
-        return "\t".join(columns)
+        return "\t".join(columns).replace("\n", "\\n")
 
     def _get_norm_label_algos_str(self):
         """Get a string representation of tokens and algorithms."""

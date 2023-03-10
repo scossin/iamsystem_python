@@ -159,7 +159,7 @@ class BratDocument:
                 entity_id=self._get_entity_id(),
                 brat_type=b_type,
                 offsets=offsets,
-                text=text,
+                text=text.replace("\n", "\\n"),
             )
             self.brat_entities.append(brat_entity)
 

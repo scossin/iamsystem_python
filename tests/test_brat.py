@@ -331,6 +331,10 @@ class BratFormatterTest(unittest.TestCase):
         self.assertEqual(
             str(annots[0]), "cancer du\\npoumon	0 16	cancer du poumon"
         )
+        self.assertEqual(
+            annots[0].to_string(text=True),
+            "cancer du\\npoumon	0 16	cancer du poumon	cancer du\\npoumon",
+        )
 
 
 if __name__ == "__main__":
