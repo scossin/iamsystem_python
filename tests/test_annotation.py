@@ -220,6 +220,7 @@ class AnnotationTest(unittest.TestCase):
         self.assertEqual(
             dic["substring"], "Another text to check substring is"
         )
+        self.assertEqual(dic["version"], "0.4.0")
 
     def test_tokens_states_to_list(self):
         """Linked list to list returns the right length."""

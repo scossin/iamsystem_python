@@ -11,6 +11,8 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+import iamsystem
+
 from iamsystem.brat.formatter import EBratFormatters
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
@@ -145,6 +147,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
                 if isinstance(keyword, IEntity)
             ],
             "kw_labels": [keyword.label for keyword in self.keywords],
+            "version": iamsystem.__version__,
         }
         if text is not None:
             text_substring = text[self.start : self.end]  # noqa
