@@ -323,6 +323,15 @@ class BratFormatterTest(unittest.TestCase):
             str(annots[0]), "calcium 2.6 mmol/L	0 18	calcium 2.6 mmol/L"
         )
 
+    def test_brat_sentence_break(self):
+        """Check when an annotation spans a new line it doesn't print multiple
+        lines."""
+        matcher = Matcher.build(keywords=["cancer du poumon"])
+        annots = matcher.annot_text("""cancer du\npoumon""")
+        self.assertEqual(
+            str(annots[0]), "cancer du\\npoumon	0 16	cancer du poumon"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
