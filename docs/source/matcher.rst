@@ -86,27 +86,61 @@ Matching strategies
 ^^^^^^^^^^^^^^^^^^^
 
 The matching strategy is the core of the IAMsystem algorithm.
-There are currently two different strategies: *window matching* and *NoOverlap* (:ref:`api_doc:EMatchingStrategy`).
-The *NoOverlap* strategy is the fastest one since it does not take into account the window parameter
-and does not produce any overlap (except in case of an ambiguity).
-The window strategy is slightly slower but allows the detection of discontinuous tokens sequence and
-nested annotations.
-
-Window Matching
-"""""""""""""""
-
-This is the default strategy. It is used in all the examples of this documentation.
-When the window size is small, the number of operations depends little on the number of keywords.
-As the window increases, the number of operations grows and may become proportional to n*m with n the number of
-tokens in the document and m the number of keywords.
-The *LargeWindowMatching* strategy trades space for time complexity, it produces exactly the same annotations as the
-WindowMatching strategy with a number of operations proportional to n*log(m).
-*LargeWindowMatching* is slower than the *WindowMatching* when w is small but much faster when w is large,
-for example when w=1000.
+There are currently two different strategies: *window matching* and *NoOverlap* (See :ref:`api_doc:EMatchingStrategy`).
+The *NoOverlap* strategy does not take into account the window parameter and does not produce any overlap
+(except in case of an ambiguity).
+The window strategy (default) allows the detection of discontinuous tokens sequence and nested annotations.
 
 No Overlap
 """"""""""
 
+.. literalinclude:: ../../tests/test_doc.py
+    :language: python
+    :dedent:
+    :start-after: # start_test_no_overlap_strategy
+    :end-before: # end_test_no_overlap_strategy
+
+.. image:: _static/no_overlap.png
+  :width: 400
+  :alt: NoOverlapImage
+
 The *NoOverlap* matching strategy was the first matching strategy implemented by IAMsystem and was described in research papers.
 It only uses a window of 1 (window parameter has no effect) and doesn't detect nested annotations.
-Although this strategy is limited in scope, it's the fastest.
+First, the algorithm builds a trie datastructure to store all the keywords. Then, for each token in the document,
+it calls fuzzy matching algorithms (not shown on the image) and tries to find a match at the current state.
+The first state is the ROOT node of the trie. If a token is a stopword (*and* in the example), the algorithm goes
+to the next token and the states remain the same. If the next token is a dead end (*south* in the example), the
+algorithm returns to the ROOT node and starts again. When the algorithm reaches a node containing a keyword
+(the green node in the example), it generates an annotation.
+In general, a single path is found, so the algorithm doesn't generate any overlap.
+
+
+Window Matching
+"""""""""""""""
+
+.. image:: _static/window_2.png
+  :width: 400
+  :alt: window_2.png
+
+This is the default strategy. It is used in all the examples of this documentation.
+Compared to the *NoOverlap* strategy, the ROOT node is repeated at each step
+which makes it possible to detect nested annotations. Also the window size determines the *lifetime* of a node.
+In this example, the state/node *north* is always alive at the south token because the window size is 2, which means that
+that *north* is two tokens away from *America*, excluding the stop words.
+
+Window Matching speed and LargeWindowMatching
+"""""""""""""""""""""""""""""""""""""""""""""
+
+.. image:: _static/largeWindowSize.png
+  :width: 400
+  :alt: largeWindowSize.png
+
+When the window size is small, the number of operations depends little on the number of keywords.
+As the window increases, the number of operations grows and can become proportional to n*m with n the number of
+tokens in the document and m the number of keywords.
+The *LargeWindowMatching* strategy trades space for time complexity, it produces exactly the same annotations as the
+*WindowMatching* strategy with a number of operations proportional to n*log(m).
+*LargeWindowMatching* is slower than the *WindowMatching* when w is small but much faster when w is large,
+for example when w=1000.
+The image above shows that the *LargeWindowMatching* strategy becomes faster as the window exceeds a certain threshold.
+The value of the threshold depends on the terminology, so performance tests should be performed when a large window is used.
