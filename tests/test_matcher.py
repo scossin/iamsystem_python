@@ -544,7 +544,9 @@ class NoOverlapStrategyTest(unittest.TestCase):
 
     def test_fuzzy_algorithms_with_negative_stopwords(self):
         """Check fuzzy algorithms are working with negative stopwords.
-        Here check it works with Levenshtein."""
+        Here check it works with Levenshtein.
+        https://github.com/scossin/iamsystem_python/issues/15
+        """
         from iamsystem import Matcher
 
         matcher = Matcher.build(

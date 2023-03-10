@@ -43,6 +43,7 @@ from iamsystem.stopwords.api import ISimpleStopwords
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.api import IStoreStopwords
 from iamsystem.stopwords.negative import NegativeStopwords
+from iamsystem.stopwords.negative import is_a_w_2_keep_fuzzy_closure
 from iamsystem.stopwords.simple import NoStopwords
 from iamsystem.stopwords.simple import Stopwords
 from iamsystem.tokenization.api import ITokenizer
@@ -394,6 +395,7 @@ class Matcher(IMatcher[TokenT]):
             matcher.add_stopwords(words=stopwords)
         elif isinstance(stopwords, IStopwords):
             matcher.stopwords = stopwords
+        first_stopwords_instance = matcher.stopwords
 
         # Configure annot_text function
         matcher.w = w
@@ -414,7 +416,6 @@ class Matcher(IMatcher[TokenT]):
             )
 
         # fuzzy algorithms parameterization
-
         def _add_algo_in_cache_closure(
             cache: CacheFuzzyAlgos, matcher: Matcher
         ):
@@ -459,14 +460,6 @@ class Matcher(IMatcher[TokenT]):
             for params in fuzzy_regex:
                 fuzzy = FuzzyRegex(**params)
                 add_algo_in_cache(algo=fuzzy)
-                if negative:
-                    negative_stopwords = typing.cast(
-                        NegativeStopwords,
-                        matcher.stopwords,
-                    )
-                    negative_stopwords.add_fun_is_a_word_to_keep(
-                        fuzzy.token_matches_pattern
-                    )
 
         # String Distances
         # words ignored by string distance algorithms
@@ -495,5 +488,19 @@ class Matcher(IMatcher[TokenT]):
                     **params,
                 )
                 add_algo_in_cache(algo=ss_algo)
-        # matcher.strategy = LargeWindowDetector(matcher.get_initial_state())
+
+        # if negative stopwords is used:
+        # add a function that calls fuzzy algorithms to check if any
+        # synonym is returned by them.
+        # https://github.com/scossin/iamsystem_python/issues/15
+        if negative:
+            is_a_w_2_keep_fuzzy = is_a_w_2_keep_fuzzy_closure(
+                fuzzy_algos=matcher.fuzzy_algos,
+                stopwords=first_stopwords_instance,
+            )
+            negative_stopwords = typing.cast(
+                NegativeStopwords,
+                matcher.stopwords,
+            )
+            negative_stopwords.add_fun_is_a_word_to_keep(is_a_w_2_keep_fuzzy)
         return matcher

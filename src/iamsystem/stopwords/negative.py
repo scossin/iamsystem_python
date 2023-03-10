@@ -5,6 +5,10 @@ from typing import List
 from typing import Optional
 from typing import Set
 
+from iamsystem.fuzzy.api import ContextFreeAlgo
+from iamsystem.fuzzy.api import FuzzyAlgo
+from iamsystem.fuzzy.cache import CacheFuzzyAlgos
+from iamsystem.fuzzy.exact import ExactMatch
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.tokenization.api import TokenT
 
@@ -62,3 +66,47 @@ class NegativeStopwords(IStopwords[TokenT]):
         )
         is_a_word_to_keep = fun_want_to_keep_it or word in self.words_to_keep
         return not is_a_word_to_keep
+
+
+def is_a_w_2_keep_fuzzy_closure(
+    fuzzy_algos: Iterable[FuzzyAlgo[TokenT]], stopwords: IStopwords
+):
+    """Returns a function that checks if fuzzy algorithms return any synonym,
+    thus that the token evaluated by NegativeStopwords is not a stopword.
+
+    :param fuzzy_algos: an iterable of fuzzy algorithms.
+    :param stopwords: a stopwords instance
+    :return: a function that can be used by a Negative Stopwords instance
+        to check if a token can be matched to a keyword's unigram, which means
+        it shouldn't be ignored.
+    """
+    context_free_algos: List[ContextFreeAlgo[TokenT]] = [
+        algo
+        for algo in fuzzy_algos
+        if isinstance(algo, ContextFreeAlgo)
+        and not isinstance(algo, ExactMatch)
+    ]
+
+    cache: List[CacheFuzzyAlgos[TokenT]] = [
+        algo for algo in fuzzy_algos if isinstance(algo, CacheFuzzyAlgos)
+    ]
+
+    def is_a_word_2_keep_according_to_fuzzy(token: TokenT) -> bool:
+        """A function to pass to a negative stopwords instance."""
+        if stopwords.is_token_a_stopword(token):
+            return False
+        syns_context_free = [
+            syn
+            for algo in context_free_algos
+            for syn in algo.get_syns_of_token(token=token)
+            if syn != FuzzyAlgo.NO_SYN
+        ]
+        syns_cache = [
+            syn
+            for algo in cache
+            for syn in algo.get_syns_of_word(token.norm_label)
+        ]
+
+        return len(syns_context_free) != 0 or len(syns_cache) != 0
+
+    return is_a_word_2_keep_according_to_fuzzy
