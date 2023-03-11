@@ -1,5 +1,22 @@
 # ChangeLog
 
+## Version 0.4.0 (beta)
+
+### Breaking changes
+- IAnnotation: remove 'brat_formatter' instance getter/setter.
+'set_brat_formatter' becomes a class method to change the BratFormatter.
+- Rename BratFormatters classes.
+- Span (super class of Annotation): remove 'to_brat_format' method.
+- Remove "offsets" attribute from the dictionary produced by
+the 'to_dict' method of an annotation.
+- FuzzyAlgo and ISynsProvider, get_synonyms method: change parameter name 'states' to 'transitions'.
+
+-### Enhancement
+-- Bug fixes: 11 to 16.
+-- Add the 'NoOverlap' matching strategy.
+-- Add IAMsystem version to the 'to_dict' method of an annotation.
+
+
 ## Version 0.3.0 (beta)
 
 ### Breaking changes

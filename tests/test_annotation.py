@@ -2,13 +2,15 @@ import unittest
 
 from iamsystem.keywords.keywords import Entity
 from iamsystem.matcher.annotation import Annotation
+from iamsystem.matcher.annotation import _linkedlist_to_list
 from iamsystem.matcher.annotation import create_annot
 from iamsystem.matcher.annotation import is_ancestor_annot_of
-from iamsystem.matcher.annotation import linkedlist_to_list
 from iamsystem.matcher.annotation import rm_nested_annots
 from iamsystem.matcher.annotation import sort_annot
 from iamsystem.matcher.matcher import Matcher
+from iamsystem.matcher.util import StateTransition
 from iamsystem.tokenization.span import is_shorter_span_of
+from iamsystem.tree.trie import Trie
 from tests.utils_detector import get_gauche_el_in_ivg
 
 
@@ -149,7 +151,7 @@ class AnnotationTest(unittest.TestCase):
         gauche_node, gauche_el = get_gauche_el_in_ivg()
         ent = Entity("Insuffisance Cardiaque Gauche", "I50.1")
         gauche_node.add_keyword(ent)
-        annot: Annotation = create_annot(last_el=gauche_el, stop_tokens=[])
+        annot: Annotation = create_annot(last_trans=gauche_el, stop_tokens=[])
         self.assertEqual(3, len(annot._tokens))
         self.assertTrue(ent in annot.keywords)
         self.assertEqual(0, annot.start)
@@ -158,12 +160,51 @@ class AnnotationTest(unittest.TestCase):
         substring = text[annot.start : annot.end]  # noqa
         self.assertEqual("Insuffisance Ventriculaire  Gauche", substring)
 
+    def test_is_start_state(self):
+        """When parent is none, it's the start_state"""
+        trie = Trie()
+        start_state = StateTransition.create_first_trans(
+            initial_state=trie.get_initial_state()
+        )
+        self.assertTrue(StateTransition.is_first_trans(start_state))
+
+    def test_transition_state_equality(self):
+        """Two transititions states are 'equal' if they have the same
+        node number. This equality is important since a 'new' state needs to
+        override an existing state."""
+        gauche_node, gauche_el = get_gauche_el_in_ivg()
+        trans_state_0 = StateTransition(
+            previous_trans=None,
+            node=gauche_node,
+            token=self.annots[0].tokens[0],
+            algos=["one"],
+            count_not_stopword=0,
+        )
+        start_state = StateTransition.create_first_trans(
+            initial_state=Trie().get_initial_state()
+        )
+        trans_state_1 = StateTransition(
+            previous_trans=start_state,
+            node=gauche_node,
+            token=None,  # noqa
+            algos=["one"],
+            count_not_stopword=0,
+        )
+        self.assertEqual(trans_state_0, trans_state_1)
+        trans_set = set()
+        trans_set.add(trans_state_0)
+        trans_set.discard(trans_state_1)
+        trans_set.add(trans_state_1)
+        self.assertEqual(len(trans_set), 1)
+        for trans in trans_set:
+            self.assertTrue(trans.token is None)  # trans_state_1 overrides
+
     def test_to_dict(self):
         """Check attribute values."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
         ent = Entity("Insuffisance Cardiaque Gauche", "I50.1")
         gauche_node.add_keyword(ent)
-        annot: Annotation = create_annot(last_el=gauche_el, stop_tokens=[])
+        annot: Annotation = create_annot(last_trans=gauche_el, stop_tokens=[])
         dic = annot.to_dict(text="Another text to check substring is working")
         self.assertEqual(dic["start"], 0)
         self.assertEqual(dic["end"], 34)
@@ -178,11 +219,12 @@ class AnnotationTest(unittest.TestCase):
         self.assertEqual(
             dic["substring"], "Another text to check substring is"
         )
+        self.assertEqual(dic["version"], "0.4.0")
 
     def test_tokens_states_to_list(self):
         """Linked list to list returns the right length."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
-        tokens_states = linkedlist_to_list(last_el=gauche_el)
+        tokens_states = _linkedlist_to_list(last_el=gauche_el)
         self.assertEqual(3, len(tokens_states))
 
     def test_node_not_in_final_state(self):
@@ -190,7 +232,7 @@ class AnnotationTest(unittest.TestCase):
         (= node is a final state). Otherwise an exception is raised."""
         gauche_node, gauche_el = get_gauche_el_in_ivg()
         with (self.assertRaises(ValueError)):
-            create_annot(last_el=gauche_el, stop_tokens=[])
+            create_annot(last_trans=gauche_el, stop_tokens=[])
 
     def test_stop_tokens(self):
         """the list of stop_tokens is correct."""

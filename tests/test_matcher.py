@@ -15,6 +15,8 @@ from iamsystem.keywords.keywords import Keyword
 from iamsystem.matcher.annotation import Annotation
 from iamsystem.matcher.annotation import replace_annots
 from iamsystem.matcher.matcher import Matcher
+from iamsystem.matcher.strategy import EMatchingStrategy
+from iamsystem.matcher.strategy import LargeWindowMatching
 from iamsystem.stopwords.negative import NegativeStopwords
 from iamsystem.stopwords.simple import NoStopwords
 from iamsystem.stopwords.simple import Stopwords
@@ -194,6 +196,7 @@ class MatcherTest(unittest.TestCase):
         self.assertEqual(1, len(annots))
 
     def test_keywords_iterator(self):
+        """Test it's possible to iterate over keywords."""
         matcher = Matcher()
         termino = Terminology()
         ent = Entity(label="ulcères gastriques", kb_id="K25")
@@ -202,6 +205,36 @@ class MatcherTest(unittest.TestCase):
         matcher.add_keywords(keywords=keyword_iter)
         annots = matcher.annot_text(text="ulcères gastriques")
         self.assertEqual(1, len(annots))
+
+    def test_duplicate_states_generate_lot_of_overlaps(self):
+        """https://github.com/scossin/iamsystem_python/issues/11
+        If the algorithm takes all possible paths then it outputs 16
+        annotations. By storing algorithms' states in a set rather than in
+        an array, an existing state is replaced.
+        """
+        matcher = Matcher.build(keywords=["cancer de la prostate"], w=3)
+        annots = matcher.annot_text(
+            text="cancer cancer de de la la prostate prostate"
+        )
+        self.assertEqual(len(annots), 1)
+        self.assertEqual(
+            str(annots[0]),
+            "cancer de la prostate	7 13;17 19;23 34	cancer de la prostate",
+        )
+
+    def test_duplicate_states_annotations_created(self):
+        """Check it creates two annotations, one for the first occurence of
+        'cancer', the next one using the last occurence of 'cancer'."""
+        matcher = Matcher.build(
+            keywords=["cancer", "cancer de la prostate"], w=10
+        )
+        annots = matcher.annot_text(text="cancer cancer cancer de la prostate")
+        self.assertEqual(len(annots), 2)
+        self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
+        self.assertEqual(
+            str(annots[1]),
+            "cancer de la prostate	14 35	cancer de la prostate",
+        )
 
 
 class AnotherFuzzyAlgo(NormLabelAlgo):
@@ -431,6 +464,102 @@ class MatcherBuild(unittest.TestCase):
             ],
         )
         annots = matcher.annot_text(text="diabete en 2010")
+        self.assertEqual(1, len(annots))
+
+    def test_large_window(self):
+        """Test fuzzy regex works"""
+        text = "absence congénitale de pigmentation ou absence de mélanine."
+        matcher = Matcher.build(keywords=["absence congenitale", "absence de"])
+        annots = matcher.annot_text(text=text)
+        self.assertEqual(2, len(annots))
+        matcher.strategy = LargeWindowMatching()
+        annots = matcher.annot_text(text=text)
+        self.assertEqual(2, len(annots))
+
+    def test_none_existing_strategy(self):
+        """An error is raised if matching strategy doesn't exist"""
+        with (self.assertRaises(KeyError)):
+            self.matcher = Matcher.build(
+                keywords=["cancer", "cancer de la prostate"],
+                strategy="NoneExistingStrategy",
+            )
+
+
+class NoOverlapStrategyTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.matcher = Matcher.build(
+            keywords=["cancer", "cancer de la prostate", "prostate", "de la"],
+            strategy=EMatchingStrategy.NO_OVERLAP,
+        )
+
+    def test_no_overlap_strategy(self):
+        """No overlapping: 'de la', 'prostate' nested annotations are not
+        created."""
+        text = "cancer de la prostate"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
+        self.assertEqual(
+            str(annots[0]), "cancer de la prostate	0 21	cancer de la prostate"
+        )
+
+    def test_no_overlap_strategy_back_track(self):
+        """The algorithm goes to 'cancer de la' - backtrack to 'cancer'
+        to generate an annotation, restart at 'de' and annotate 'de la'."""
+        text = "cancer de la something else prostate"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(3, len(annots))
+        self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
+        self.assertEqual(str(annots[1]), "de la	7 12	de la")
+        self.assertEqual(str(annots[2]), "prostate	28 36	prostate")
+
+    def test_no_overlap_strategy_stopword(self):
+        """Test the strategy words with stopwords"""
+        self.matcher = Matcher.build(
+            keywords=["cancer", "cancer de la prostate"],
+            stopwords=["de", "la"],
+            strategy="no_overlap",
+        )
+        text = "cancer de la prostate"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
+        self.assertEqual(
+            str(annots[0]), "cancer prostate	0 6;13 21	cancer de la prostate"
+        )
+        text = "cancer du colon"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
+        self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
+
+    def test_no_overlap_end_token(self):
+        """Test 'END_TOKEN' works: at the last token 'instutionnelle'
+        it reaches the 'END_TOKEN' and needs to back-track to the token 'de'
+        in order to detect medecine."""
+        self.matcher = Matcher.build(
+            keywords=["portail de la médecine instutionnelle", "médecine"],
+            strategy="no_overlap",
+        )
+        text = "Portail de la médecine"
+        annots = self.matcher.annot_text(text=text)
+        self.assertEqual(1, len(annots))
+
+    def test_fuzzy_algorithms_with_negative_stopwords(self):
+        """Check fuzzy algorithms are working with negative stopwords.
+        Here check it works with Levenshtein.
+        https://github.com/scossin/iamsystem_python/issues/15
+        """
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(
+            keywords=["cancer du poumon"],
+            stopwords=["du"],
+            negative=True,
+            w=1,
+            abbreviations=[("k", "cancer")],
+            spellwise=[
+                dict(measure=ESpellWiseAlgo.LEVENSHTEIN, max_distance=1)
+            ],
+        )
+        annots = matcher.annot_text(text="k poumons")
         self.assertEqual(1, len(annots))
 
 

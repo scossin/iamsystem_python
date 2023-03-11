@@ -14,5 +14,5 @@ def lower_no_accents(string: str) -> str:
 
 def _remove_accents(string: str) -> str:
     """Remove accents with unidecode library."""
-    unaccented_string: str = unidecode_expect_ascii(string)
+    unaccented_string: str = unidecode_expect_ascii(string.replace("μ", "u"))
     return unaccented_string

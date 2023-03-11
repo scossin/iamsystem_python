@@ -2,19 +2,24 @@
 import functools
 
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import Union
 
-from iamsystem.brat.formatter import TokenFormatter
+import iamsystem
+
+from iamsystem.brat.formatter import EBratFormatters
 from iamsystem.keywords.api import IEntity
 from iamsystem.keywords.api import IKeyword
 from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IBratFormatter
-from iamsystem.matcher.util import TransitionState
-from iamsystem.tokenization.api import IToken
+from iamsystem.matcher.printannot import PrintAnnot
+from iamsystem.matcher.util import StateTransition
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tokenization.span import Span
 from iamsystem.tokenization.span import is_shorter_span_of
@@ -33,8 +38,9 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         self,
         tokens: List[TokenT],
         algos: List[List[str]],
-        last_state: INode,
+        node: INode,
         stop_tokens: List[TokenT],
+        text: Optional[str] = None,
     ):
         """Create an annotation.
 
@@ -42,29 +48,30 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
             :class:`~iamsystem.IToken` protocol.
         :param algos: the list of fuzzy algorithms that matched the tokens.
             One to several algorithms per token.
-        :param last_state: a final state of iamsystem algorithm containing the
+        :param node: a final state of iamsystem algorithm containing the
             keyword that matched this sequence of tokens.
         :param stop_tokens: the list of stopwords tokens of the document.
+        :param text: the annotated text/document.
         """
         super().__init__(tokens)
         self._algos = algos
-        self._last_state = last_state
+        self._node = node
         self._stop_tokens = stop_tokens
-        self._brat_formatter: IBratFormatter = TokenFormatter()
+        self._text = text
+
+    @property
+    def text(self) -> Optional[str]:
+        """Return the annotated text."""
+        return self._text
+
+    @text.setter
+    def text(self, value: str) -> None:
+        """Set the annotated text."""
+        self._text = value
 
     @property
     def algos(self) -> List[List[str]]:
         return self._algos
-
-    @property
-    def brat_formatter(self) -> IBratFormatter:
-        """Return the Brat formatter."""
-        return self._brat_formatter
-
-    @brat_formatter.setter
-    def brat_formatter(self, brat_formatter: IBratFormatter):
-        """Change the Brat formatter to produce a different Brat annotation"""
-        self._brat_formatter = brat_formatter
 
     @property
     def label(self):
@@ -72,7 +79,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         return self.tokens_label
 
     @property
-    def stop_tokens(self) -> List[IToken]:
+    def stop_tokens(self) -> List[TokenT]:
         """The list of stopwords tokens inside the annotation detected by
         the Matcher stopwords instance."""
         # Note that _stop_tokens are stopwords of the document. The reason to
@@ -90,7 +97,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
     def keywords(self) -> Sequence[IKeyword]:
         """The linked entities, :class:`~iamsystem.IKeyword` instances that
         matched a document's tokens."""
-        return self._last_state.get_keywords()  # type: ignore
+        return self._node.get_keywords()  # type: ignore
 
     def get_tokens_algos(self) -> Iterable[Tuple[TokenT, List[str]]]:
         """Get each token and the list of fuzzy algorithms that matched it.
@@ -110,7 +117,6 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         dic = {
             "start": self.start,
             "end": self.end,
-            "offsets": self.to_brat_format(),
             "label": self.label,
             "norm_label": self.tokens_norm_label,
             "tokens": [itoken_to_dict(token) for token in self.tokens],
@@ -121,6 +127,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
                 if isinstance(keyword, IEntity)
             ],
             "kw_labels": [keyword.label for keyword in self.keywords],
+            "version": iamsystem.__annot_version__,
         }
         if text is not None:
             text_substring = text[self.start : self.end]  # noqa
@@ -131,7 +138,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
         """Annotation string representation with Brat offsets format."""
         return f"{self.to_string()}"
 
-    def to_string(self, text: str = None, debug=False) -> str:
+    def to_string(self, text=False, debug=False) -> str:
         """Get a default string representation of this object.
 
         :param text: the document from which this annotation comes from.
@@ -141,22 +148,14 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
             and fuzzyalgo names.
         :return: a concatenated string
         """
-        text_span, offsets = self._brat_formatter.get_text_and_offsets(
-            annot=self
-        )
-        columns = [text_span, offsets, self._keywords_to_string()]
-        if text is not None:
-            text_substring = text[self.start : self.end]  # noqa
+        columns = [Annotation.annot_to_str(annot=self)]
+        if text:
+            text_substring = self.text[self.start : self.end]  # noqa
             columns.append(text_substring)
         if debug:
             token_annots_str = self._get_norm_label_algos_str()
             columns.append(token_annots_str)
-        return "\t".join(columns)
-
-    def _keywords_to_string(self):
-        """Merge the keywords."""
-        keywords_str = [str(keyword) for keyword in self.keywords]
-        return ";".join(keywords_str)
+        return "\t".join(columns).replace("\n", "\\n")
 
     def _get_norm_label_algos_str(self):
         """Get a string representation of tokens and algorithms."""
@@ -167,6 +166,26 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
             ]
         )
 
+    annot_to_str: Callable[[IAnnotation], str] = PrintAnnot().annot_to_str
+    " A class function that generates a string representation of an annotation."  # noqa
+
+    @classmethod
+    def set_brat_formatter(
+        cls, brat_formatter: Union[EBratFormatters, IBratFormatter]
+    ):
+        """Change Brat Formatter to change text-span and offsets.
+
+        :param brat_formatter: A Brat formatter to produce
+            a different Brat annotation. If None, default to
+            :class:`~iamsystem.ContSeqFormatter`.
+        :return: None
+        """
+        if isinstance(brat_formatter, EBratFormatters):
+            brat_formatter = brat_formatter.value
+        cls.annot_to_str = PrintAnnot(
+            brat_formatter=brat_formatter
+        ).annot_to_str
+
 
 def is_ancestor_annot_of(a: Annotation, b: Annotation) -> bool:
     """True if a is an ancestor of b."""
@@ -174,8 +193,8 @@ def is_ancestor_annot_of(a: Annotation, b: Annotation) -> bool:
         return False
     if a.start != b.start or a.end > b.end:
         return False
-    ancestors = b._last_state.get_ancestors()
-    return a._last_state in ancestors
+    ancestors = b._node.get_ancestors()
+    return a._node in ancestors
 
 
 def sort_annot(annots: List[Annotation]) -> None:
@@ -202,6 +221,7 @@ def rm_nested_annots(annots: List[Annotation], keep_ancestors=False):
     # executed.
     ancest_indices = set()
     short_indices = set()
+    # count = 0
     for i, annot in enumerate(annots):
         for _y, other in enumerate(annots[(i + 1) :]):  # noqa
             y = _y + i + 1  # y is the indice of other in annots list.
@@ -214,6 +234,8 @@ def rm_nested_annots(annots: List[Annotation], keep_ancestors=False):
                     ancest_indices.add(i)
             if is_shorter_span_of(other, annot):
                 short_indices.add(y)
+            # count += 1
+    # print(f"count:{count}")
     if keep_ancestors:
         indices_2_remove = set(
             [i for i in short_indices if i not in ancest_indices]
@@ -228,41 +250,44 @@ def rm_nested_annots(annots: List[Annotation], keep_ancestors=False):
 
 
 def create_annot(
-    last_el: TransitionState, stop_tokens: List[TokenT]
+    last_trans: StateTransition, stop_tokens: List[TokenT]
 ) -> Annotation:
-    """last_el contains a sequence of tokens in text and a final state (a
-    matcher keyword)."""
-    if not last_el.node.is_a_final_state():
-        raise ValueError("Last element is not a final state.")
-    trans_states = linkedlist_to_list(last_el)
-    last_state = trans_states[-1].node
-    # order by token indice. Note that last node is not last anymore.
+    """last_trans contains all the state transitions and sequence of tokens in
+    text. The last_trans's node is a final state which means it is associated
+    with one or many keywords."""
+    if not last_trans.node.is_a_final_state():
+        raise ValueError("StateTransition's node is not a final state.")
+    node = last_trans.node
+    trans_states = _linkedlist_to_list(last_trans)
+    # order by token indice (important if tokens were ordered alphabetically).
+    # Note that node might not be the last anymore.
     trans_states.sort(key=lambda x: x.token.i)
     tokens: List[TokenT] = [t.token for t in trans_states]
     algos = [t.algos for t in trans_states]
     # Note that the annotations are created during iterating over the
-    # document, when order of tokens is reversed in the Matcher, the list of
-    # stopwords can be incomplete. So the full stopwords list is passed
-    # to each annotation, stop_words inside each annotation is filtered later.
+    # document's tokens. If tokens are ordered alphabetically,
+    # the list of stopwords inside an annotation are not known at this step.
+    # Thus, all the stopwords detected are passed to each annotation:
+    # it's not possible to filter them here, at the moment of creating an
+    # annotation.
     annot = Annotation(
         tokens=tokens,
         algos=algos,
-        last_state=last_state,
+        node=node,
         stop_tokens=stop_tokens,
     )
     return annot
 
 
-def linkedlist_to_list(last_el: TransitionState) -> List[TransitionState]:
+def _linkedlist_to_list(last_el: StateTransition) -> List[StateTransition]:
     """Convert a linked list to a list."""
-    trans_states: List[TransitionState] = [last_el]
-    parent = last_el.parent
-    # it stops when reaching the initial state.
-    while isinstance(parent, TransitionState):
-        trans_states.append(parent)
-        parent = parent.parent
-    trans_states.reverse()
-    return trans_states
+    transitions: List[StateTransition] = [last_el]
+    previous_trans = last_el.previous_trans
+    while not StateTransition.is_first_trans(previous_trans):
+        transitions.append(previous_trans)
+        previous_trans = previous_trans.previous_trans
+    transitions.reverse()
+    return transitions
 
 
 def replace_annots(

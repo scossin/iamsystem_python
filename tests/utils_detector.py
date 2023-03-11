@@ -3,8 +3,7 @@ from typing import Tuple
 from iamsystem.fuzzy.abbreviations import Abbreviations
 from iamsystem.keywords.collection import Terminology
 from iamsystem.keywords.keywords import Entity
-from iamsystem.matcher.util import StartState
-from iamsystem.matcher.util import TransitionState
+from iamsystem.matcher.util import StateTransition
 from iamsystem.tokenization.token import Token
 from iamsystem.tokenization.tokenize import french_tokenizer
 from iamsystem.tree.nodes import Node
@@ -30,19 +29,25 @@ def get_abbs_irc() -> Abbreviations:
     return abbs
 
 
-def get_gauche_el_in_ivg() -> Tuple[Node, TransitionState]:
+def get_gauche_el_in_ivg() -> Tuple[Node, StateTransition]:
     """Return a transition state."""
     # root_node
     trie = Trie()
     root_node = trie.get_initial_state()
-    root_el = StartState(node=trie.root_node)
+    start_state = StateTransition.create_first_trans(
+        initial_state=trie.root_node
+    )
     # insuffisance
     ins_node = Node(token="insuffisance", node_num=1, parent_node=root_node)
     ins_span = Token(
         label="Insuffisance", norm_label="insuffisance", start=0, end=12, i=0
     )
-    ins_el: TransitionState = TransitionState(
-        node=ins_node, token=ins_span, parent=root_el, algos=["exact"]
+    ins_el: StateTransition = StateTransition(
+        node=ins_node,
+        token=ins_span,
+        previous_trans=start_state,
+        algos=["exact"],
+        count_not_stopword=0,
     )
     # ventriculaire
     vent_node = Node(token="ventriculaire", node_num=2, parent_node=ins_node)
@@ -53,16 +58,24 @@ def get_gauche_el_in_ivg() -> Tuple[Node, TransitionState]:
         end=26,
         i=1,
     )
-    vent_el: TransitionState = TransitionState(
-        node=vent_node, token=vent_span, parent=ins_el, algos=["exact"]
+    vent_el: StateTransition = StateTransition(
+        node=vent_node,
+        token=vent_span,
+        previous_trans=ins_el,
+        algos=["exact"],
+        count_not_stopword=0,
     )
     # gauche
     gauche_node = Node(token="gauche", node_num=3, parent_node=vent_node)
     gauche_span = Token(
         label="Gauche", norm_label="gauche", start=28, end=34, i=2
     )
-    gauche_el: TransitionState = TransitionState(
-        node=gauche_node, token=gauche_span, parent=vent_el, algos=["exact"]
+    gauche_el: StateTransition = StateTransition(
+        node=gauche_node,
+        token=gauche_span,
+        previous_trans=vent_el,
+        algos=["exact"],
+        count_not_stopword=0,
     )
     return gauche_node, gauche_el
 

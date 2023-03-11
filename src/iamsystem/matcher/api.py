@@ -1,5 +1,6 @@
 """ Matcher's API."""
 from typing import List
+from typing import Optional
 from typing import Sequence
 from typing import Tuple
 
@@ -7,12 +8,14 @@ from typing_extensions import Protocol
 from typing_extensions import runtime_checkable
 
 from iamsystem.fuzzy.api import ISynsProvider
+from iamsystem.keywords.api import IKeyword
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import ISpan
 from iamsystem.tokenization.api import ITokenizer
 from iamsystem.tokenization.api import TokenT
 from iamsystem.tree.api import IInitialState
+from iamsystem.tree.nodes import INode
 
 
 @runtime_checkable
@@ -27,22 +30,33 @@ class IAnnotation(ISpan, IOffsets, Protocol[TokenT]):
 
     @property
     def stop_tokens(self) -> List[TokenT]:
-        """Access brat formatter."""
+        """The list of stopwords tokens inside the annotation detected by
+        the Matcher stopwords instance"""
         raise NotImplementedError
 
     @property
-    def brat_formatter(self) -> "IBratFormatter":
-        """Access brat formatter."""
+    def text(self) -> Optional[str]:
+        """Return the annotated text."""
+        raise NotImplementedError
+
+    @text.setter
+    def text(self, value) -> Optional[str]:
+        """Set the annotated text."""
         raise NotImplementedError
 
     @property
-    def keywords(self):  #
+    def keywords(self) -> Sequence[IKeyword]:
         """Keywords linked to this annotation."""
+        raise NotImplementedError
+
+    @property
+    def to_string(self) -> str:
+        """A string representation of an annotation."""
         raise NotImplementedError
 
 
 @runtime_checkable
-class IBaseMatcher(Protocol):
+class IBaseMatcher(Protocol[TokenT]):
     """Declare the API methods expected by a IAMsystem matcher."""
 
     def annot_text(self, text: str) -> List[IAnnotation[TokenT]]:
@@ -78,5 +92,38 @@ class IBratFormatter(Protocol):
 
     def get_text_and_offsets(self, annot: IAnnotation) -> Tuple[str, str]:
         """Return text (document substring) and annotation's offsets in the
-        Brat format"""
+            Brat format.
+
+        :param annot: an annotation.
+        :return: A text span and its offsets:
+          'The start-offset is the index of the first character of the
+          annotated span in the text (".txt" file), i.e. the number of
+          characters in the document preceding it. The end-offset is the index
+          of the first character after the annotated span.'
+        """
+        raise NotImplementedError
+
+
+@runtime_checkable
+class IMatchingStrategy(Protocol[TokenT]):
+    """Declare what a matching strategy must implement."""
+
+    def detect(
+        self,
+        tokens: Sequence[TokenT],
+        w: int,
+        initial_state: INode,
+        syns_provider: ISynsProvider,
+        stopwords: IStopwords,
+    ) -> List[IAnnotation[TokenT]]:
+        """Main internal function that implements iamsystem's algorithm.
+
+        :param tokens: a sequence of :class:`~iamsystem.IToken`.
+        :param w: window, how many previous tokens can the algorithm look at.
+        :param initial_state: a node/state in the trie, i.e. the root node.
+        :param syns_provider: a class that provides synonyms for each token.
+        :param stopwords: an instance of :class:`~iamsystem.IStopwords`
+        that checks if a token is a stopword.
+        :return: A list of :class:`~iamsystem.Annotation`.
+        """
         raise NotImplementedError

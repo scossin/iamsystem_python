@@ -1,7 +1,6 @@
 """ Classes that store a sequence of tokens. """
 from typing import List
 
-from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import ISpan
 from iamsystem.tokenization.api import TokenT
@@ -45,18 +44,6 @@ class Span(ISpan[TokenT], IOffsets):
     def end_i(self):
         """The index of the last token within the parent document."""
         return self.tokens[-1].i
-
-    def to_brat_format(self) -> str:
-        """Get Brat offsets format. See https://brat.nlplab.org/standoff.html
-        'The start-offset is the index of the first character of the annotated
-        span in the text (".txt" file),
-        i.e. the number of characters in the document preceding it.
-        The end-offset is the index of the first character
-        after the annotated span.'
-
-        :return: a string format of tokens' offsets
-        """
-        return get_brat_format_seq(self._tokens)
 
     @property
     def tokens_label(self):

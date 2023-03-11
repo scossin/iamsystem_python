@@ -4,7 +4,9 @@ from typing import Callable
 from typing import Iterable
 from typing import List
 
+from iamsystem.brat.formatter import ContSeqFormatter
 from iamsystem.matcher.api import IAnnotation
+from iamsystem.matcher.api import IBratFormatter
 
 
 class BratEntity:
@@ -114,10 +116,17 @@ class BratDocument:
     one per line. See https://brat.nlplab.org/standoff.html
     """
 
-    def __init__(self):
+    def __init__(self, brat_formatter: IBratFormatter = None):
+        """Create a Brat Document.
+
+        :param brat_formatter: a strategy to create Brat annotations span,
+            like merging continuous sequence of tokens. Default BratFormatter
+            create a Brat span for each individual token.
+        """
         self.brat_entities: List[BratEntity] = []
         self.brat_notes: List[BratNote] = []
         self.get_note: get_note_fun = get_note_keyword_label
+        self.brat_formatter = brat_formatter or ContSeqFormatter()
 
     def add_annots(
         self,
@@ -145,12 +154,12 @@ class BratDocument:
                 b_type = annot.keywords[0].__getattribute__(keyword_attr)
             elif brat_type is not None:
                 b_type = brat_type
-            text, offsets = annot.brat_formatter.get_text_and_offsets(annot)
+            text, offsets = self.brat_formatter.get_text_and_offsets(annot)
             brat_entity = BratEntity(
                 entity_id=self._get_entity_id(),
                 brat_type=b_type,
                 offsets=offsets,
-                text=text,
+                text=text.replace("\n", "\\n"),
             )
             self.brat_entities.append(brat_entity)
 

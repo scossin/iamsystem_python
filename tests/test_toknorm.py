@@ -138,6 +138,11 @@ class LowerNoAccentsTest(unittest.TestCase):
         norm_str = lower_no_accents(" ulcères ")
         self.assertEqual(" ulceres ", norm_str)
 
+    def test_microgramme_symbol(self):
+        """Test it normalises μg to ug."""
+        norm_str = lower_no_accents("μg")
+        self.assertEqual("ug", norm_str)
+
 
 if __name__ == "__main__":
     unittest.main()

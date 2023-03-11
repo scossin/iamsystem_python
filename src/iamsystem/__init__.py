@@ -2,8 +2,10 @@ __all__ = [
     "Matcher",
     "IMatcher",
     "IBaseMatcher",
+    "EMatchingStrategy",
     "Annotation",
     "IAnnotation",
+    "PrintAnnot",
     "rm_nested_annots",
     "IStopwords",
     "Stopwords",
@@ -48,20 +50,24 @@ __all__ = [
     "SimStringWrapper",
     "ESimStringMeasure",
     "IBratFormatter",
-    "TokenFormatter",
-    "TokenStopFormatter",
+    "EBratFormatters",
+    "ContSeqFormatter",
+    "ContSeqStopFormatter",
     "SpanFormatter",
-    "IndividualTokenFormatter",
+    "TokenFormatter",
 ]
+
+__annot_version__ = "0.4.0"
 
 from iamsystem.brat.adapter import BratDocument
 from iamsystem.brat.adapter import BratEntity
 from iamsystem.brat.adapter import BratNote
 from iamsystem.brat.adapter import BratWriter
-from iamsystem.brat.formatter import IndividualTokenFormatter
+from iamsystem.brat.formatter import ContSeqFormatter
+from iamsystem.brat.formatter import ContSeqStopFormatter
+from iamsystem.brat.formatter import EBratFormatters
 from iamsystem.brat.formatter import SpanFormatter
 from iamsystem.brat.formatter import TokenFormatter
-from iamsystem.brat.formatter import TokenStopFormatter
 from iamsystem.fuzzy.abbreviations import Abbreviations
 from iamsystem.fuzzy.abbreviations import token_is_upper_case
 from iamsystem.fuzzy.api import ContextFreeAlgo
@@ -90,6 +96,8 @@ from iamsystem.matcher.api import IBaseMatcher
 from iamsystem.matcher.api import IBratFormatter
 from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.matcher import Matcher
+from iamsystem.matcher.printannot import PrintAnnot
+from iamsystem.matcher.strategy import EMatchingStrategy
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.negative import NegativeStopwords
 from iamsystem.stopwords.simple import NoStopwords

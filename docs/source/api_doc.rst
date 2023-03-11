@@ -20,6 +20,12 @@ Matcher build
    :members: build
    :noindex:
 
+EMatchingStrategy
+^^^^^^^^^^^^^^^^^
+.. autoclass:: iamsystem.EMatchingStrategy
+   :members:
+   :noindex:
+
 Span
 ----
 .. autoclass:: iamsystem.matcher.annotation.Span
@@ -281,23 +287,30 @@ Brat
 Formatter
 ^^^^^^^^^
 
+EBratFormatters
+"""""""""""""""
+.. autoclass:: iamsystem.EBratFormatters
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ContSeqFormatter
+""""""""""""""
+.. autoclass:: iamsystem.ContSeqFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ContSeqStopFormatter
+""""""""""""""
+.. autoclass:: iamsystem.ContSeqStopFormatter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 TokenFormatter
 """"""""""""""
 .. autoclass:: iamsystem.TokenFormatter
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-IndividualTokenFormatter
-""""""""""""""""""""""""
-.. autoclass:: iamsystem.IndividualTokenFormatter
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-TokenStopFormatter
-""""""""""""""""""
-.. autoclass:: iamsystem.TokenStopFormatter
    :members:
    :undoc-members:
    :show-inheritance:
