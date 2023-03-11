@@ -11,10 +11,10 @@
 the 'to_dict' method of an annotation.
 - FuzzyAlgo and ISynsProvider, get_synonyms method: change parameter name 'states' to 'transitions'.
 
--### Enhancement
--- Bug fixes: 11 to 16.
--- Add the 'NoOverlap' matching strategy.
--- Add IAMsystem version to the 'to_dict' method of an annotation.
+### Enhancement
+- Bug fixes: 11 to 16.
+- Add the 'NoOverlap' matching strategy.
+- Add a versioning number to the dictionary representation of an annotation.
 
 
 ## Version 0.3.0 (beta)
