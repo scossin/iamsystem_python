@@ -1,5 +1,3 @@
-__version__ = "0.4.0"
-
 __all__ = [
     "Matcher",
     "IMatcher",
@@ -58,6 +56,8 @@ __all__ = [
     "SpanFormatter",
     "TokenFormatter",
 ]
+
+__annot_version__ = "0.4.0"
 
 from iamsystem.brat.adapter import BratDocument
 from iamsystem.brat.adapter import BratEntity

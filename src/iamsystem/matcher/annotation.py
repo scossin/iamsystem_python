@@ -127,7 +127,7 @@ class Annotation(Span[TokenT], IAnnotation[TokenT]):
                 if isinstance(keyword, IEntity)
             ],
             "kw_labels": [keyword.label for keyword in self.keywords],
-            "version": iamsystem.__version__,
+            "version": iamsystem.__annot_version__,
         }
         if text is not None:
             text_substring = text[self.start : self.end]  # noqa
