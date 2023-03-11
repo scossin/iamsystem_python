@@ -1,19 +1,12 @@
 from enum import Enum
-from typing import List
 from typing import Tuple
 
 from iamsystem.brat.util import get_brat_format_seq
 from iamsystem.matcher.api import IAnnotation
 from iamsystem.matcher.api import IBratFormatter
-from iamsystem.tokenization.api import IOffsets
+from iamsystem.tokenization.util import get_text_and_offsets_of_sequences
 from iamsystem.tokenization.util import group_continuous_seq
-from iamsystem.tokenization.util import multiple_seq_to_offsets
 from iamsystem.tokenization.util import remove_trailing_stopwords
-
-
-def get_text_span(text: str, offsets: IOffsets):
-    """Return the text substring of an offsets."""
-    return text[offsets.start : offsets.end]  # noqa
 
 
 class ContSeqFormatter(IBratFormatter):
@@ -23,12 +16,9 @@ class ContSeqFormatter(IBratFormatter):
     def get_text_and_offsets(self, annot: IAnnotation) -> Tuple[str, str]:
         """Return tokens' labels and token's offsets (merge if continuous)"""
         sequences = group_continuous_seq(tokens=annot.tokens)
-        offsets: List[IOffsets] = multiple_seq_to_offsets(sequences=sequences)
-        seq_offsets = get_brat_format_seq(offsets)
-        seq_label = " ".join(
-            [get_text_span(annot.text, one_offsets) for one_offsets in offsets]
+        return get_text_and_offsets_of_sequences(
+            sequences=sequences, annot=annot
         )
-        return seq_label, seq_offsets
 
 
 class TokenFormatter(IBratFormatter):
@@ -64,11 +54,9 @@ class ContSeqStopFormatter(IBratFormatter):
             sequences = remove_trailing_stopwords(
                 sequences=sequences, stop_i=stop_i
             )
-        seq_tokens = [token for seq in sequences for token in seq]
-        seq_label = " ".join([token.label for token in seq_tokens])
-        offsets = multiple_seq_to_offsets(sequences=sequences)
-        seq_offsets = get_brat_format_seq(offsets)
-        return seq_label, seq_offsets
+        return get_text_and_offsets_of_sequences(
+            sequences=sequences, annot=annot
+        )
 
 
 class SpanFormatter(IBratFormatter):

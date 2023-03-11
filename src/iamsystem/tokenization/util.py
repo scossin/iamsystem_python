@@ -4,6 +4,8 @@ from typing import List
 from typing import Sequence
 from typing import Tuple
 
+from iamsystem.brat.util import get_brat_format_seq
+from iamsystem.matcher.api import IAnnotation
 from iamsystem.tokenization.api import IOffsets
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.tokenize import Offsets
@@ -130,6 +132,23 @@ def remove_trailing_stopwords(
         last_i = i_not_stop[-1]
         out_seq.append(seq[: last_i + 1])
     return out_seq
+
+
+def get_text_span(text: str, offsets: IOffsets) -> str:
+    """Return the text substring of an offsets."""
+    return text[offsets.start : offsets.end]  # noqa
+
+
+def get_text_and_offsets_of_sequences(
+    sequences: List[List[IToken]], annot: IAnnotation
+) -> Tuple[str, str]:
+    """Return text of brat offsets from multiple sequences."""
+    offsets: List[IOffsets] = multiple_seq_to_offsets(sequences=sequences)
+    seq_offsets = get_brat_format_seq(offsets)
+    seq_label = " ".join(
+        [get_text_span(annot.text, one_offsets) for one_offsets in offsets]
+    )
+    return seq_label, seq_offsets
 
 
 def multiple_seq_to_offsets(sequences: List[List[IToken]]) -> List[IOffsets]:
