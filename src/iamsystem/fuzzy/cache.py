@@ -10,7 +10,7 @@ from typing import Sequence
 from iamsystem.fuzzy.api import FuzzyAlgo
 from iamsystem.fuzzy.api import INormLabelAlgo
 from iamsystem.fuzzy.api import SynAlgo
-from iamsystem.matcher.util import LinkedState
+from iamsystem.matcher.util import StateTransition
 from iamsystem.tokenization.api import IToken
 from iamsystem.tokenization.api import TokenT
 
@@ -47,9 +47,9 @@ class CacheFuzzyAlgos(FuzzyAlgo, Generic[TokenT]):
         self,
         tokens: Sequence[IToken],
         token: TokenT,
-        states: Iterable[LinkedState],
+        transitions: Iterable[StateTransition],
     ) -> List[SynAlgo]:
-        """Implements superclass abstract method."""
+        """Overrides. Implements superclass abstract method."""
         word = token.norm_label
         return self.get_syns_of_word(word=word)
 

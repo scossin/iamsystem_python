@@ -38,7 +38,7 @@ class INode(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_child_nodes(self) -> Iterable[INode]:
+    def get_children_nodes(self) -> Iterable[INode]:
         """Retrive child nodes."""
         raise NotImplementedError
 
@@ -79,7 +79,7 @@ class INode(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_child_tokens(self) -> Iterable[str]:
+    def get_children_tokens(self) -> Iterable[str]:
         """Return the children token."""
         raise NotImplementedError
 
@@ -111,7 +111,7 @@ class EmptyNode(INode):
         """This method shouldn't be called."""
         raise NotImplementedError
 
-    def get_child_nodes(self) -> Iterable[INode]:
+    def get_children_nodes(self) -> Iterable[INode]:
         """This method shouldn't be called."""
         raise NotImplementedError
 
@@ -127,7 +127,7 @@ class EmptyNode(INode):
         """This method shouldn't be called."""
         raise NotImplementedError
 
-    def get_child_tokens(self) -> Iterable[str]:
+    def get_children_tokens(self) -> Iterable[str]:
         """Return the children token."""
         raise NotImplementedError
 
@@ -208,7 +208,7 @@ class Node(INode, ABC):
             ancest = ancest.parent_node
         return ancestors
 
-    def get_child_nodes(self) -> Iterable[INode]:
+    def get_children_nodes(self) -> Iterable[INode]:
         """Return all the child of this node that correspond to all
         possible state transitions."""
         return self.childNodes.values().__iter__()
@@ -222,7 +222,7 @@ class Node(INode, ABC):
         """Return the token associated to this node."""
         return self.token
 
-    def get_child_tokens(self) -> Iterable[str]:
+    def get_children_tokens(self) -> Iterable[str]:
         """Return the childs' tokens."""
         for token in self.childNodes.keys():
             yield token

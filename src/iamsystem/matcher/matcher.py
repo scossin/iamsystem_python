@@ -38,7 +38,7 @@ from iamsystem.matcher.api import IMatcher
 from iamsystem.matcher.api import IMatchingStrategy
 from iamsystem.matcher.strategy import EMatchingStrategy
 from iamsystem.matcher.strategy import WindowMatching
-from iamsystem.matcher.util import LinkedState
+from iamsystem.matcher.util import StateTransition
 from iamsystem.stopwords.api import ISimpleStopwords
 from iamsystem.stopwords.api import IStopwords
 from iamsystem.stopwords.api import IStoreStopwords
@@ -198,9 +198,7 @@ class Matcher(IMatcher[TokenT]):
         """
         return self._tokenizer.tokenize(text=text)
 
-    def add_keywords(
-        self, keywords: Iterable[Union[str, IKeyword, Dict[Any]]]
-    ) -> None:
+    def add_keywords(self, keywords: Iterable[Union[str, IKeyword]]) -> None:
         """Utility function to add multiple keywords.
 
         :param keywords: an iterable of string (labels) or
@@ -272,19 +270,19 @@ class Matcher(IMatcher[TokenT]):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Iterable[LinkedState],
+        transitions: Iterable[StateTransition],
     ) -> List[SynAlgos]:
         """Get synonyms of a token with configured fuzzy algorithms.
 
         :param tokens: document's tokens.
         :param token: the token for which synonyms are expected.
-        :param states: algorithm's states.
+        :param transitions: algorithm's states.
         :return: tuples of synonyms and fuzzy algorithm's names.
         """
         syns_collector = defaultdict(list)
         for algo in self.fuzzy_algos:
             for syn, algo_name in algo.get_synonyms(
-                tokens=tokens, token=token, states=states
+                tokens=tokens, token=token, transitions=transitions
             ):
                 syns_collector[syn].append(algo_name)
         synonyms: List[SynAlgos] = list(syns_collector.items())
@@ -429,14 +427,14 @@ class Matcher(IMatcher[TokenT]):
 
             return add_algo_in_cache
 
-        cache = CacheFuzzyAlgos()
+        cache: CacheFuzzyAlgos = CacheFuzzyAlgos()
         add_algo_in_cache = _add_algo_in_cache_closure(
             cache=cache, matcher=matcher
         )
 
         # Abbreviations
         if abbreviations is not None:
-            _abbreviations = Abbreviations(name="abbs")
+            _abbreviations: Abbreviations[TokenT] = Abbreviations(name="abbs")
             matcher.add_fuzzy_algo(fuzzy_algo=_abbreviations)
             for abb in abbreviations:
                 short_form, long_form = abb

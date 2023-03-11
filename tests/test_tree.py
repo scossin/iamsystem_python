@@ -165,8 +165,8 @@ class NodeTest(unittest.TestCase):
         """insuffisance -> cardiaque"""
         ins_node = Node(token="insuffisance", node_num=1)
         card_node = Node(token="cardiaque", node_num=2, parent_node=ins_node)
-        self.assertEqual(1, len(list(ins_node.get_child_nodes())))
-        self.assertEqual(0, len(list(card_node.get_child_nodes())))
+        self.assertEqual(1, len(list(ins_node.get_children_nodes())))
+        self.assertEqual(0, len(list(card_node.get_children_nodes())))
 
     def test_goto_node(self):
         """insuffisance -> cardiaque."""

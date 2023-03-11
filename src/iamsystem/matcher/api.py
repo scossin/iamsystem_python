@@ -39,6 +39,11 @@ class IAnnotation(ISpan, IOffsets, Protocol[TokenT]):
         """Return the annotated text."""
         raise NotImplementedError
 
+    @text.setter
+    def text(self, value) -> Optional[str]:
+        """Set the annotated text."""
+        raise NotImplementedError
+
     @property
     def keywords(self) -> Sequence[IKeyword]:
         """Keywords linked to this annotation."""
@@ -51,7 +56,7 @@ class IAnnotation(ISpan, IOffsets, Protocol[TokenT]):
 
 
 @runtime_checkable
-class IBaseMatcher(Protocol):
+class IBaseMatcher(Protocol[TokenT]):
     """Declare the API methods expected by a IAMsystem matcher."""
 
     def annot_text(self, text: str) -> List[IAnnotation[TokenT]]:
@@ -100,7 +105,7 @@ class IBratFormatter(Protocol):
 
 
 @runtime_checkable
-class IMatchingStrategy(Protocol):
+class IMatchingStrategy(Protocol[TokenT]):
     """Declare what a matching strategy must implement."""
 
     def detect(

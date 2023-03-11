@@ -15,7 +15,7 @@ from typing_extensions import runtime_checkable
 
 from iamsystem.fuzzy.util import IWords2ignore
 from iamsystem.fuzzy.util import SimpleWords2ignore
-from iamsystem.matcher.util import LinkedState
+from iamsystem.matcher.util import StateTransition
 from iamsystem.tokenization.api import TokenT
 
 
@@ -38,7 +38,7 @@ class ISynsProvider(Protocol[TokenT]):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Iterable[LinkedState],
+        transitions: Iterable[StateTransition],
     ) -> List[SynAlgos]:
         """Retrieve the synonyms of a token.
 
@@ -47,9 +47,9 @@ class ISynsProvider(Protocol[TokenT]):
             around the token of interest given by 'i' parameter.
         :param token: the token of this sequence for which synonyms
             are expected.
-        :param states: the states in which the algorithm currently is.
-            Useful is the fuzzy algorithm needs to know the current states
-            and the possible state transitions.
+        :param transitions: the state transitions in which the algorithm
+            currently is. Useful is the fuzzy algorithm needs to know the next
+             or possible transitions.
         :return: 0 to many synonyms.
         """
         raise NotImplementedError
@@ -95,7 +95,7 @@ class FuzzyAlgo(Generic[TokenT], ABC):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Iterable[LinkedState],
+        transitions: Iterable[StateTransition],
     ) -> List[SynAlgo]:
         """Main API function to retrieve all synonyms provided by
         a fuzzy algorithm.
@@ -105,9 +105,9 @@ class FuzzyAlgo(Generic[TokenT], ABC):
             around the token of interest given by 'i' parameter.
         :param token: the token of this sequence for which synonyms
             are expected.
-        :param states: the states in which the algorithm currently is.
-            Useful is the fuzzy algorithm needs to know the current states
-            and the possible state transitions.
+        :param transitions: the state transitions in which the algorithm
+            currently is. Useful is the fuzzy algorithm needs to know the next
+             or possible transitions.
         :return: 0 to many synonyms (SynAlgo type).
         """
         raise NotImplementedError
@@ -124,7 +124,7 @@ class ContextFreeAlgo(FuzzyAlgo[TokenT], ABC):
         self,
         tokens: Sequence[TokenT],
         token: TokenT,
-        states: Iterable[LinkedState],
+        transitions: Iterable[StateTransition],
     ) -> List[SynAlgo]:
         """Delegate to get_syns_of_token."""
         return [
