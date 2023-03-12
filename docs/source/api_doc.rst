@@ -75,6 +75,8 @@ Keyword
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 Entity
 ^^^^^^
 .. autoclass:: iamsystem.Entity
@@ -82,11 +84,15 @@ Entity
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 Terminology
 ^^^^^^^^^^^
 .. autoclass:: iamsystem.Terminology
    :members:
    :show-inheritance:
+
+   .. automethod:: __init__
 
 Tokenization
 -------
@@ -168,12 +174,16 @@ Stopwords
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 NegativeStopwords
 ^^^^^^^^^^^^
 .. autoclass:: iamsystem.NegativeStopwords
    :members:
    :undoc-members:
    :show-inheritance:
+
+   .. automethod:: __init__
 
 NoStopwords
 ^^^^^^^^^^
@@ -217,6 +227,8 @@ CacheFuzzyAlgos
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 Abbreviations
 ^^^^^^^^^^^^^
 
@@ -235,12 +247,16 @@ FuzzyRegex
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 WordNormalizer
 ^^^^^^^^^^^^^^
 .. autoclass:: iamsystem.WordNormalizer
    :members:
    :undoc-members:
    :show-inheritance:
+
+   .. automethod:: __init__
 
 SpellWise
 ^^^^^^^^^
@@ -301,12 +317,16 @@ ContSeqFormatter
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 ContSeqStopFormatter
 """"""""""""""
 .. autoclass:: iamsystem.ContSeqStopFormatter
    :members:
    :undoc-members:
    :show-inheritance:
+
+   .. automethod:: __init__
 
 TokenFormatter
 """"""""""""""
@@ -315,6 +335,8 @@ TokenFormatter
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 SpanFormatter
 """"""""""""""
 .. autoclass:: iamsystem.SpanFormatter
@@ -322,12 +344,16 @@ SpanFormatter
    :undoc-members:
    :show-inheritance:
 
+   .. automethod:: __init__
+
 BratDocument
 ^^^^^^^^^^^^
 .. autoclass:: iamsystem.BratDocument
    :members:
    :undoc-members:
    :show-inheritance:
+
+   .. automethod:: __init__
 
 BratEntity
 ^^^^^^^^^^^^^
@@ -352,6 +378,8 @@ BratWriter
 .. autoclass:: iamsystem.BratWriter
    :members:
    :show-inheritance:
+
+   .. automethod:: __init__
 
 spaCy
 -----
