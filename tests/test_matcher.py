@@ -211,28 +211,36 @@ class MatcherTest(unittest.TestCase):
         If the algorithm takes all possible paths then it outputs 16
         annotations. By storing algorithms' states in a set rather than in
         an array, an existing state is replaced.
+        New behavior due to
+        https://github.com/scossin/iamsystem_python/issues/18 issue:
+        two annotations are created since prostate is repeated.
         """
         matcher = Matcher.build(keywords=["cancer de la prostate"], w=3)
         annots = matcher.annot_text(
             text="cancer cancer de de la la prostate prostate"
         )
-        self.assertEqual(len(annots), 1)
+        self.assertEqual(len(annots), 2)
         self.assertEqual(
             str(annots[0]),
             "cancer de la prostate	7 13;17 19;23 34	cancer de la prostate",
         )
 
-    def test_duplicate_states_annotations_created(self):
-        """Check it creates two annotations, one for the first occurence of
-        'cancer', the next one using the last occurence of 'cancer'."""
+    def test_states_override(self):
+        """States overriding avoid multiple overlapping.
+        See https://github.com/scossin/iamsystem_python/issues/11
+        Here it creates three annotations: 1) first occurence of
+        'cancer', 2) second occurence of cancer, 3) a single annotation for
+        cancer de la prostate (state 'cancer' overrides the previous ones).
+        """
         matcher = Matcher.build(
             keywords=["cancer", "cancer de la prostate"], w=10
         )
         annots = matcher.annot_text(text="cancer cancer cancer de la prostate")
-        self.assertEqual(len(annots), 2)
+        self.assertEqual(len(annots), 3)
         self.assertEqual(str(annots[0]), "cancer	0 6	cancer")
+        self.assertEqual(str(annots[1]), "cancer	7 13	cancer")
         self.assertEqual(
-            str(annots[1]),
+            str(annots[2]),
             "cancer de la prostate	14 35	cancer de la prostate",
         )
 
@@ -566,9 +574,18 @@ class NoOverlapStrategyTest(unittest.TestCase):
         """Check repeated words are annotated multiple times.
         https://github.com/scossin/iamsystem_python/issues/18
         """
-        from iamsystem import Matcher
-
         matcher = Matcher.build(keywords=["cancer"])
+        annots = matcher.annot_text(text="cancer cancer")
+        self.assertEqual(2, len(annots))
+
+    def test_repeated_words_large_window(self):
+        """Check repeated words are annotated multiple times with the large
+        window strategy.
+        https://github.com/scossin/iamsystem_python/issues/18
+        """
+        matcher = Matcher.build(
+            keywords=["cancer"], strategy=EMatchingStrategy.LARGE_WINDOW
+        )
         annots = matcher.annot_text(text="cancer cancer")
         self.assertEqual(2, len(annots))
 

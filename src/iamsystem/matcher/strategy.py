@@ -79,15 +79,7 @@ class WindowMatching(IMatchingStrategy):
                         count_not_stopword=count_not_stopword,
                     )
                     new_trans.append(next_trans)
-                    # Why 'next_trans not in transitions:
-                    # Don't create multiple annotations for the same transition
-                    # For example 'cancer cancer' with keyword 'cancer':
-                    # if an annotation was created for the first 'cancer'
-                    # occurent, don't create a new one of the second occurence.
-                    if (
-                        next_node.is_a_final_state()
-                        and next_trans not in transitions
-                    ):
+                    if next_node.is_a_final_state():
                         annot = create_annot(
                             last_trans=next_trans, stop_tokens=stop_tokens
                         )
@@ -183,19 +175,11 @@ class LargeWindowMatching(IMatchingStrategy):
                     )
                     new_trans.add(next_trans)
             for trans in new_trans:
-                # create an annotation if:
-                # 1) node is a final state
-                # 2) an annotation wasn't created yet for this state:
-                # 2.1 there is no previous 'none-obsolete state'.
                 if trans.node.is_a_final_state():
-                    old_trans = transitions.get(trans.id, None)
-                    if old_trans is None or old_trans.is_obsolete(
-                        count_not_stopword=count_not_stopword, w=w
-                    ):
-                        annot = create_annot(
-                            last_trans=trans, stop_tokens=stop_tokens
-                        )
-                        annots.append(annot)
+                    annot = create_annot(
+                        last_trans=trans, stop_tokens=stop_tokens
+                    )
+                    annots.append(annot)
                 for nexttoken in trans.node.get_children_tokens():
                     avaible_trans[nexttoken].add(trans.id)
                 transitions[trans.id] = trans
