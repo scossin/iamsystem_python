@@ -562,6 +562,16 @@ class NoOverlapStrategyTest(unittest.TestCase):
         annots = matcher.annot_text(text="k poumons")
         self.assertEqual(1, len(annots))
 
+    def test_repeated_words(self):
+        """Check repeated words are annotated multiple times.
+        https://github.com/scossin/iamsystem_python/issues/18
+        """
+        from iamsystem import Matcher
+
+        matcher = Matcher.build(keywords=["cancer"])
+        annots = matcher.annot_text(text="cancer cancer")
+        self.assertEqual(2, len(annots))
+
 
 if __name__ == "__main__":
     unittest.main()
