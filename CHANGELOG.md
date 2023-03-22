@@ -1,5 +1,8 @@
 # ChangeLog
 
+## Version 0.5.0 (beta)
+- Fix issue 18: create multiple annotations when a keyword is repeated in the same window.
+
 ## Version 0.4.0 (beta)
 
 ### Breaking changes

@@ -102,7 +102,7 @@ class FuzzyAlgo(Generic[TokenT], ABC):
 
         :param tokens: the sequence of tokens of the document.
             Useful when the fuzzy algorithm needs context, namely the tokens
-            around the token of interest given by 'i' parameter.
+            around the token of interest.
         :param token: the token of this sequence for which synonyms
             are expected.
         :param transitions: the state transitions in which the algorithm
