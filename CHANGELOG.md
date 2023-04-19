@@ -1,5 +1,8 @@
 # ChangeLog
 
+## Version 0.5.1 (beta)
+- Fix issue 20: allows to customize the name of an iamsystem spaCy component and to add multiple iamsystem components into a spaCy pipeline.
+
 ## Version 0.5.0 (beta)
 - Fix issue 18: create multiple annotations when a keyword is repeated in the same window.
 

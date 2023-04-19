@@ -61,9 +61,11 @@ class BaseCustomComp(ABC):
 
     def __call__(self, doc: Doc) -> Doc:
         """Function called by spaCy to execute this component."""
-        spans = self.process(doc)
         if self.attr not in doc.spans:
-            doc.spans[self.attr] = spans
+            doc.spans[self.attr] = []
+        iam_spans = self.process(doc)
+        for span in iam_spans:
+            doc.spans[self.attr].append(span)
         return doc
 
     def process(self, doc) -> List[Span]:
