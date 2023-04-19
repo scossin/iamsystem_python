@@ -32,9 +32,10 @@ class SpacyTokenizer(ITokenizer[TokenSpacyAdapter]):
         :param text: a string to tokenize with spaCy component.
         :return: an ordered sequence of tokens.
         """
-        doc = self.nlp(text, disable=["iamsystem"])
-        tokens = [
-            TokenSpacyAdapter(spacy_token=token, norm_fun=self.norm_fun)
-            for token in doc
-        ]
-        return tokens
+        with self.nlp.select_pipes(enable="tokenizer"):
+            doc = self.nlp(text)
+            tokens = [
+                TokenSpacyAdapter(spacy_token=token, norm_fun=self.norm_fun)
+                for token in doc
+            ]
+            return tokens
