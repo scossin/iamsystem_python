@@ -148,6 +148,38 @@ class IAMsystemBuildSpacyTest(unittest.TestCase):
         doc = nlp("insuffisance cardiaque gauche")
         self.assertEqual(1, len(doc.spans["iamsystem"]))
 
+    def test_component_name(self):
+        """Rename iamsystem component
+        https://github.com/scossin/iamsystem_python/issues/20"""
+        nlp = spacy.blank("fr")
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="my_custom_name",
+            last=True,
+            config={"build_params": {"keywords": ["cancer"]}},
+        )
+        doc = nlp("prostate cancer")
+        self.assertEqual(1, len(doc.spans["iamsystem"]))
+
+    def test_multiple_components(self):
+        """Add several iam components.
+        Annotations are appended to the same attribute 'iamsystem'."""
+        nlp = spacy.blank("fr")
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="first_iam_component",
+            last=True,
+            config={"build_params": {"keywords": ["cancer"]}},
+        )
+        nlp.add_pipe(
+            "iamsystem_matcher",
+            name="second_iam_component",
+            last=True,
+            config={"build_params": {"keywords": ["prostate"]}},
+        )
+        doc = nlp("prostate cancer")
+        self.assertEqual(2, len(doc.spans["iamsystem"]))
+
     def test_all_params(self):
         """Test it words with all the parameters."""
         nlp = French()
