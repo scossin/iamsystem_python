@@ -1,6 +1,5 @@
 # iamsystem
 ![test](https://github.com/scossin/iamsystem_python/actions/workflows/tests.yml/badge.svg)
-[![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
 [![PyPI version fury.io](https://badge.fury.io/py/iamsystem.svg)](https://pypi.org/project/iamsystem/)
 [![PyPI license](https://img.shields.io/pypi/l/iamsystem.svg)](https://pypi.python.org/pypi/iamsystem/)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/iamsystem.svg)](https://pypi.python.org/pypi/iamsystem/)
