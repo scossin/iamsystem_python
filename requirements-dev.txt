@@ -1,4 +1,4 @@
-unidecode>=1.1.1
+anyascii>=0.3.2
 typing-extensions~=4.4.0
 spellwise>=0.8.0
 nltk>=3.8.0
