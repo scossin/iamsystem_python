@@ -60,7 +60,7 @@ You can override the *normalize* function of a tokenizer to suit your needs.
 The :ref:`api_doc:english_tokenizer` normalizes each token by doing lowercasing.
 The :ref:`api_doc:french_tokenizer` performs lowercasing and remove accents.
 The only difference between the french_tokenizer and the english_tokenizer is the removal of diacritics
-done with the unidecode library that tries to transform the label in ASCII characters.
+done with the `anyascii` library that tries to transform the label in ASCII characters.
 Using the french_tokenizer for english documents adds very little overhead.
 
 
