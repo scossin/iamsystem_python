@@ -1,7 +1,7 @@
 """ String normalization functions. """
 from typing import Callable
 
-from unidecode import unidecode_expect_ascii  # type: ignore
+from anyascii import anyascii  # type: ignore
 
 
 normalizeFun = Callable[[str], str]
@@ -13,6 +13,6 @@ def lower_no_accents(string: str) -> str:
 
 
 def _remove_accents(string: str) -> str:
-    """Remove accents with unidecode library."""
-    unaccented_string: str = unidecode_expect_ascii(string.replace("μ", "u"))
+    """Remove accents with anyascii library."""
+    unaccented_string: str = anyascii(string.replace("μ", "u"))
     return unaccented_string
