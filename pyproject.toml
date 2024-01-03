@@ -14,11 +14,18 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 keywords = ["NLP", "semantic annotation", "entity linking"]
-dependencies = ['anyascii>=0.3.2', 'typing-extensions~=4.4.0', 'spellwise>=0.8.0', 'pysimstring~=1.2.1']
+dependencies = [
+    "anyascii>=0.3.2",
+    "typing_extensions>=4.7.0; python_version>='3.12'",
+    "typing_extensions~=4.4.0; python_version<'3.12'",
+    "spellwise>=0.8.0",
+    "pysimstring~=1.2.1",
+]
 
 [project.optional-dependencies]
 tests = ['nltk>=3.8.0', 'spacy>=3.2.0']
