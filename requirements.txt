@@ -1,4 +1,5 @@
 anyascii>=0.3.2
-typing-extensions~=4.4.0
+typing_extensions>=4.7.0; python_version>="3.12"
+typing_extensions~=4.4.0; python_version<"3.12"
 spellwise>=0.8.0
 pysimstring~=1.2.1
