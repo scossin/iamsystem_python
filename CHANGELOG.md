@@ -1,5 +1,9 @@
 # ChangeLog
 
+## Version 0.6.0 (beta)
+- Replace `unidecode` with `anyascii` for license compliance.
+- Add support for Python 3.12.
+
 ## Version 0.5.1 (beta)
 - Fix issue 20: allows to customize the name of an iamsystem spaCy component and to add multiple iamsystem components into a spaCy pipeline.
 
