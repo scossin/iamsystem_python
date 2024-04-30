@@ -20,15 +20,26 @@ classifiers = [
 ]
 keywords = ["NLP", "semantic annotation", "entity linking"]
 dependencies = [
-    "anyascii>=0.3.2",
-    "typing_extensions>=4.7.0",
-    "spellwise>=0.8.0",
-    "pysimstring~=1.2.1",
+    "anyascii",
+    "pysimstring",
+    "spellwise",
+    "typing_extensions",
 ]
 
 [project.optional-dependencies]
-tests = ['nltk>=3.8.0', 'spacy>=3.2.0']
-doc = ["sphinx"]
+dev = [
+    "black",
+    "flake8",
+    "pre-commit",
+]
+doc = [
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+tests = [
+    "nltk",
+    "spacy",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/scossin/iamsystem_python"
