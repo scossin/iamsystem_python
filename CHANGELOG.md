@@ -1,5 +1,8 @@
 # ChangeLog
 
+## Version 0.6.1 (beta)
+- Remove dependencies' version, solve some dependency conflicts. 
+
 ## Version 0.6.0 (beta)
 - Replace `unidecode` with `anyascii` for license compliance.
 - Add support for Python 3.12.
